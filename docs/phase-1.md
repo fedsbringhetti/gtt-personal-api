@@ -4,19 +4,20 @@ Status: **approved**, decisions confirmed on 2026-10-29. Development not started
 
 ## 1. Goal
 
-An HTTP API, running in Docker on the Orange Pi 5, that can:
+An HTTP API, packaged as a Docker image for the Orange Pi 5, that can:
 - search for a stop by name, by code, or by location;
 - show the next departures from a stop, filtered by line;
 - store favorite stops.
 
 ### Definition of done
 
-- [ ] Searching `porta nuova` returns GTT stops 39, 40 and 253 among the first results.
-- [ ] Searching `39` returns stop 39 as the first result.
-- [ ] Departures for stop 39 match those shown on muoversiatorino.it.
-- [ ] Times stay correct after midnight and across daylight saving changes (covered by tests).
-- [ ] If the upstream is down, stop search still works and departures return a clear error.
-- [ ] The container runs on the Orange Pi, survives a restart without losing data, and uses less than 50 MB of RAM at idle.
+- [x] Searching `porta nuova` returns GTT stops 39, 40 and 253 among the first results.
+- [x] Searching `39` returns stop 39 as the first result.
+- [x] Departures for stop 39 match those shown on muoversiatorino.it.
+- [x] Times stay correct after midnight and across daylight saving changes (covered by tests).
+- [x] If the upstream is down, stop search still works and departures return a clear error (or stale data up to 2 minutes old).
+- [x] The container survives a restart without losing data and uses less than 50 MB of RAM at idle (32 MB measured, arm64 under Docker on the Mac).
+- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned with Phase 3.
 
 ## 2. Decisions
 
@@ -27,7 +28,7 @@ An HTTP API, running in Docker on the Orange Pi 5, that can:
 | C | Users | Single user: favorites are not tied to an account |
 | D | Delay history | Not in this phase; the schema does not rule it out and it will be revisited in Phase 2 |
 | E | Compatible `/query.php?stop=` endpoint | No |
-| F | How the image gets to the Orange Pi | Built on the Mac (`linux/arm64`, native on Apple Silicon) and pushed to GitHub Container Registry |
+| F | How the image gets to the Orange Pi | Built on the Mac (`linux/arm64`, native on Apple Silicon) and pushed to Docker Hub as a public image (`federicosbringhetti/gtt-personal-api`), following the home server conventions. Changed from GHCR on 2026-10-29 |
 
 ## 3. What we know about the upstream
 
@@ -272,8 +273,10 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
   - runtime `debian:bookworm-slim` with only `ca-certificates` and `tzdata`;
   - non-root user.
 - **Health check** without curl in the image: the binary itself has a `healthcheck` subcommand that calls `/health`.
-- **docker-compose.yml**: port 8080, volume `./data:/data`, `restart: unless-stopped`, `TZ=Europe/Rome`, memory limit.
-- Target: image under 40 MB.
+- **docker-compose.yml**, following the home server conventions: folder `/home/federico/gtt-personal-api/`, explicit `container_name`, host port 8100 → container 8080 (8080 is taken on the host), bind mount `./data:/data` (what the backup saves), `env_file: .env` with `.env.example` in the repository, `TZ: Europe/Rome`, `healthcheck`, `restart: unless-stopped`, 128 MB memory limit. The `data` folder must belong to uid 10001.
+- **`scripts/build-image.sh [--push]`** builds the arm64 image tagged with the Cargo version and `latest`, and optionally pushes it to Docker Hub.
+- Target: image under 40 MB. Measured: 38 MB to download, 138 MB uncompressed (108 MB Debian base, 15 MB binary). A distroless base would roughly halve the uncompressed size but removes the shell used for debugging on the Pi.
+- Deployment steps: [deploy.md](deploy.md).
 
 ## 13. Tests
 
@@ -292,7 +295,7 @@ Each step ends with something verifiable and is developed in its own branch with
 3. **Stop index**: migrations, sync, normalization, search, nearby stops, details. Check: the search criteria in section 1.
 4. **Favorites**: table and endpoints.
 5. **Robustness**: `stale` responses, retry, `/api/status`, optional token.
-6. **Docker and deployment**: arm64 image, compose, start on the Orange Pi. Check: all criteria in section 1 on the Pi.
+6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 3.
 
 ## 15. Out of scope for this phase
 

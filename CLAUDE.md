@@ -1,11 +1,12 @@
 # CLAUDE.md
 
-Personal service for real-time GTT public transport departures in Turin: Rust backend, running in Docker on an Orange Pi 5 (ARM64). Single user.
+Personal service for real-time GTT public transport departures in Turin: Rust backend, packaged as a Docker image for an Orange Pi 5 (ARM64); tested locally for now, first deployment planned with Phase 3. Single user.
 
 ## Reference documents
 
 - [PLAN.md](PLAN.md): project phases, cross-cutting decisions, workflow.
 - [docs/phase-1.md](docs/phase-1.md): detailed plan for Phase 1 (core backend).
+- [docs/guide.md](docs/guide.md): how the service works and how to use it; keep it up to date when behavior changes.
 
 Decisions already made are recorded in these files: follow them, and when a choice is not covered, ask instead of deciding alone.
 
@@ -29,7 +30,8 @@ Decisions already made are recorded in these files: follow them, and when a choi
 ## Stack
 
 - Rust: `axum`, `tokio`, `reqwest` (rustls), `sqlx` + SQLite (FTS5), `serde`, `chrono` + `chrono-tz`, `moka`, `tracing`, `thiserror`.
-- Multi-stage Docker for `linux/arm64`; images on `ghcr.io/fedsbringhetti/gtt-personal-api`.
+- Multi-stage Docker for `linux/arm64`; public images on Docker Hub as `federicosbringhetti/gtt-personal-api`.
+- Deployment follows the home server conventions in [docs/deploy.md](docs/deploy.md): host port 8100, bind mount `./data`, secrets only in `.env`.
 
 ## Data source
 

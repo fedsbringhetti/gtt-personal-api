@@ -1,0 +1,15 @@
+# The image is public: keep secrets, local data and anything not needed to build out of the
+# build context. Only the compiled binary ends up in the final image anyway.
+/target
+/data
+/.git
+/.github
+/.claude
+/docs
+/scripts
+/tests
+.env
+.env.*
+*.md
+docker-compose.yml
+.DS_Store

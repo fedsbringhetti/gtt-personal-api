@@ -1,4 +1,9 @@
-use std::{process::ExitCode, sync::Arc};
+use std::{
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
+    process::ExitCode,
+    sync::Arc,
+    time::Duration,
+};
 
 use gtt_personal_api::{
     api::{self, AppState},
@@ -27,6 +32,24 @@ async fn main() -> ExitCode {
         }
     };
 
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .as_slice()
+    {
+        [] => serve(config).await,
+        ["healthcheck"] => healthcheck(config.bind_addr).await,
+        _ => {
+            eprintln!("usage: gtt-personal-api [healthcheck]");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// Runs the service until Ctrl+C or SIGTERM.
+async fn serve(config: Config) -> ExitCode {
     let upstream = match UpstreamClient::new(config.upstream_url.clone(), config.upstream_timeout) {
         Ok(upstream) => upstream,
         Err(err) => {
@@ -93,6 +116,44 @@ async fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Checks that the local service answers `/health`, for the Docker health check (the image has
+/// no curl). Exit code 0 when healthy.
+async fn healthcheck(bind_addr: SocketAddr) -> ExitCode {
+    let url = format!("http://{}/health", local_addr(bind_addr));
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+    {
+        Ok(client) => client,
+        Err(err) => {
+            eprintln!("healthcheck: {err}");
+            return ExitCode::FAILURE;
+        }
+    };
+    match client.get(&url).send().await {
+        Ok(response) if response.status().is_success() => ExitCode::SUCCESS,
+        Ok(response) => {
+            eprintln!("healthcheck: {url} returned {}", response.status());
+            ExitCode::FAILURE
+        }
+        Err(err) => {
+            eprintln!("healthcheck: {url}: {err}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// The address to reach a server bound to `bind_addr` from the same machine: a wildcard
+/// address (`0.0.0.0`, `::`) becomes loopback.
+fn local_addr(bind_addr: SocketAddr) -> SocketAddr {
+    let ip = match bind_addr.ip() {
+        IpAddr::V4(ip) if ip.is_unspecified() => IpAddr::V4(Ipv4Addr::LOCALHOST),
+        IpAddr::V6(ip) if ip.is_unspecified() => IpAddr::V6(Ipv6Addr::LOCALHOST),
+        ip => ip,
+    };
+    SocketAddr::new(ip, bind_addr.port())
+}
+
 /// Resolves on Ctrl+C or SIGTERM (what `docker stop` sends).
 async fn shutdown_signal() {
     let ctrl_c = async {
@@ -120,4 +181,20 @@ async fn shutdown_signal() {
         () = terminate => {},
     }
     tracing::info!("shutdown signal received");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wildcard_bind_addresses_become_loopback() {
+        let addr = |s: &str| s.parse::<SocketAddr>().unwrap();
+        assert_eq!(local_addr(addr("0.0.0.0:8080")), addr("127.0.0.1:8080"));
+        assert_eq!(local_addr(addr("[::]:8080")), addr("[::1]:8080"));
+        assert_eq!(
+            local_addr(addr("192.168.1.5:9000")),
+            addr("192.168.1.5:9000")
+        );
+    }
 }
