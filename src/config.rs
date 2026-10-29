@@ -2,7 +2,7 @@ use std::{net::SocketAddr, path::PathBuf, time::Duration};
 
 use chrono::NaiveTime;
 
-use crate::stops::Feeds;
+use crate::{api::auth::ApiToken, stops::Feeds};
 
 const DEFAULT_BIND_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_UPSTREAM_URL: &str = "https://plan.muoversiatorino.it/otp/routers/mato/index/graphql";
@@ -23,6 +23,8 @@ pub struct Config {
     pub stops_sync_time: NaiveTime,
     /// Feeds searched when a request does not specify any.
     pub default_feeds: Feeds,
+    /// When set, `/api/*` requires `Authorization: Bearer <token>`.
+    pub api_token: Option<ApiToken>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -64,6 +66,15 @@ impl Config {
                 |value| NaiveTime::parse_from_str(value, "%H:%M").map_err(|err| err.to_string()),
             )?,
             default_feeds: parse_or_default(&lookup, "DEFAULT_FEEDS", DEFAULT_FEEDS)?,
+            // Unset or empty means no token.
+            api_token: match lookup("API_TOKEN").filter(|value| !value.trim().is_empty()) {
+                Some(value) => Some(value.parse().map_err(|reason| ConfigError::Invalid {
+                    var: "API_TOKEN",
+                    value: "***".to_owned(),
+                    reason,
+                })?),
+                None => None,
+            },
         })
     }
 }
@@ -118,6 +129,18 @@ mod tests {
             NaiveTime::from_hms_opt(4, 0, 0).unwrap()
         );
         assert_eq!(config.default_feeds, Feeds::Only(vec!["gtt".to_owned()]));
+        assert_eq!(config.api_token, None);
+    }
+
+    #[test]
+    fn reads_api_token_without_leaking_it() {
+        assert_eq!(config_from(&[("API_TOKEN", "")]).unwrap().api_token, None);
+        assert_eq!(
+            config_from(&[("API_TOKEN", "s3cret")]).unwrap().api_token,
+            Some("s3cret".parse().unwrap())
+        );
+        let err = config_from(&[("API_TOKEN", "two words")]).unwrap_err();
+        assert!(!err.to_string().contains("two words"), "{err}");
     }
 
     #[test]

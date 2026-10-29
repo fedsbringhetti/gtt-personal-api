@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     Json,
-    http::StatusCode,
+    http::{HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
 use serde_json::json;
@@ -16,6 +16,8 @@ use crate::{
 #[derive(Debug)]
 pub enum ApiError {
     InvalidRequest(String),
+    /// Missing or wrong bearer token.
+    Unauthorized,
     StopNotFound(String),
     FavoriteNotFound(i64),
     UpstreamTimeout,
@@ -29,6 +31,11 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, code, message) = match self {
             Self::InvalidRequest(message) => (StatusCode::BAD_REQUEST, "invalid_request", message),
+            Self::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "unauthorized",
+                "Missing or invalid bearer token".to_owned(),
+            ),
             Self::StopNotFound(stop) => (
                 StatusCode::NOT_FOUND,
                 "stop_not_found",
@@ -57,7 +64,13 @@ impl IntoResponse for ApiError {
             ),
         };
         let body = json!({ "error": { "code": code, "message": message } });
-        (status, Json(body)).into_response()
+        let mut response = (status, Json(body)).into_response();
+        if status == StatusCode::UNAUTHORIZED {
+            response
+                .headers_mut()
+                .insert(header::WWW_AUTHENTICATE, HeaderValue::from_static("Bearer"));
+        }
+        response
     }
 }
 

@@ -1,12 +1,19 @@
 //! Client for the OpenTripPlanner GraphQL API behind muoversiatorino.it.
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
+use chrono::Utc;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
 
+pub mod health;
 mod queries;
 pub mod types;
+
+use health::UpstreamHealth;
+
+/// Wait before the single retry of a transient failure.
+const RETRY_DELAY: Duration = Duration::from_millis(300);
 
 /// The full stop list is large and slow to generate; it gets its own timeout.
 const ALL_STOPS_TIMEOUT: Duration = Duration::from_secs(60);
@@ -27,6 +34,12 @@ pub enum UpstreamError {
 }
 
 impl UpstreamError {
+    /// Failures worth one more try: connection problems and overloaded gateways. Timeouts are
+    /// not retried, since they already took the whole timeout.
+    fn is_transient(&self) -> bool {
+        matches!(self, Self::Unreachable(_) | Self::Status(502..=504))
+    }
+
     fn from_reqwest(err: reqwest::Error) -> Self {
         if err.is_timeout() {
             Self::Timeout
@@ -40,6 +53,7 @@ impl UpstreamError {
 pub struct UpstreamClient {
     http: reqwest::Client,
     url: reqwest::Url,
+    health: Arc<UpstreamHealth>,
 }
 
 #[derive(Deserialize)]
@@ -64,7 +78,16 @@ impl UpstreamClient {
                 env!("CARGO_PKG_VERSION")
             ))
             .build()?;
-        Ok(Self { http, url })
+        Ok(Self {
+            http,
+            url,
+            health: Arc::default(),
+        })
+    }
+
+    /// Outcome of recent calls, updated by every query.
+    pub fn health(&self) -> Arc<UpstreamHealth> {
+        self.health.clone()
     }
 
     /// Stop details and departures in the next `time_range`. `None` when the stop does not exist.
@@ -103,11 +126,34 @@ impl UpstreamClient {
         self.query_with_timeout(query, variables, None).await
     }
 
-    /// `timeout` overrides the client timeout for this request.
+    /// `timeout` overrides the client timeout for this request. Transient failures are retried
+    /// once; the outcome is recorded in `health`.
     async fn query_with_timeout<T: DeserializeOwned>(
         &self,
         query: &str,
         variables: serde_json::Value,
+        timeout: Option<Duration>,
+    ) -> Result<T, UpstreamError> {
+        let mut result = self.send_query(query, &variables, timeout).await;
+        if let Err(err) = &result
+            && err.is_transient()
+        {
+            tracing::debug!("retrying after transient upstream failure: {err}");
+            tokio::time::sleep(RETRY_DELAY).await;
+            result = self.send_query(query, &variables, timeout).await;
+        }
+
+        match &result {
+            Ok(_) => self.health.record_success(Utc::now()),
+            Err(err) => self.health.record_failure(Utc::now(), err),
+        }
+        result
+    }
+
+    async fn send_query<T: DeserializeOwned>(
+        &self,
+        query: &str,
+        variables: &serde_json::Value,
         timeout: Option<Duration>,
     ) -> Result<T, UpstreamError> {
         let mut request = self
@@ -141,5 +187,23 @@ impl UpstreamClient {
             Ok(_) => Err(UpstreamError::InvalidResponse("missing data".to_owned())),
             Err(err) => Err(UpstreamError::InvalidResponse(err.to_string())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_connection_and_gateway_failures_are_transient() {
+        assert!(UpstreamError::Unreachable("refused".into()).is_transient());
+        assert!(UpstreamError::Status(502).is_transient());
+        assert!(UpstreamError::Status(503).is_transient());
+        assert!(UpstreamError::Status(504).is_transient());
+        assert!(!UpstreamError::Status(500).is_transient());
+        assert!(!UpstreamError::Status(404).is_transient());
+        assert!(!UpstreamError::Timeout.is_transient());
+        assert!(!UpstreamError::GraphQl("bad".into()).is_transient());
+        assert!(!UpstreamError::InvalidResponse("bad".into()).is_transient());
     }
 }

@@ -231,3 +231,83 @@ async fn invalid_requests_return_400_without_calling_upstream() {
         assert_eq!(json["error"]["code"], "invalid_request", "{uri}");
     }
 }
+
+#[tokio::test]
+async fn retries_once_on_a_transient_failure() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(503))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(fixture("stop_39.json")))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
+
+    let (status, json) = get(&app, "/api/stops/39/departures").await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["stale"], false);
+}
+
+#[tokio::test]
+async fn does_not_retry_graphql_errors() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(json!({
+            "errors": [{ "message": "Validation error" }]
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
+
+    let (status, _) = get(&app, "/api/stops/39/departures").await;
+
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+}
+
+#[tokio::test]
+async fn serves_stale_departures_when_the_upstream_fails() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(fixture("stop_39.json")))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(json!({
+            "errors": [{ "message": "Internal error" }]
+        })))
+        .mount(&server)
+        .await;
+    let app = common::test_app_with(
+        &server.uri(),
+        at(STOP_39_FIRST_DEPARTURE - 30),
+        TIMEOUT,
+        common::Options {
+            cache_ttl: Duration::from_millis(50),
+            ..Default::default()
+        },
+    )
+    .await
+    .router;
+
+    let (status, fresh) = get(&app, "/api/stops/39/departures").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(fresh["stale"], false);
+    assert_eq!(fresh["fetched_at"], "2026-10-29T17:23:23+01:00");
+
+    // The fresh cache expires; the upstream now fails.
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let (status, stale) = get(&app, "/api/stops/39/departures").await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(stale["stale"], true);
+    assert_eq!(stale["fetched_at"], fresh["fetched_at"]);
+    assert_eq!(stale["departures"], fresh["departures"]);
+}

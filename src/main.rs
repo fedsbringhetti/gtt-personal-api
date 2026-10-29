@@ -54,14 +54,21 @@ async fn main() -> ExitCode {
         config.stops_sync_time,
     );
 
+    if config.api_token.is_none() {
+        tracing::warn!("API_TOKEN is not set: /api/* is open to anyone who can reach the service");
+    }
+    let upstream_health = upstream.health();
     let state = AppState {
         departures: Arc::new(DeparturesService::new(
             upstream,
             config.departures_cache_ttl,
+            clock.clone(),
         )),
         stops,
         favorites,
         default_feeds: config.default_feeds.clone(),
+        upstream_health,
+        api_token: config.api_token.clone(),
         clock,
     };
 

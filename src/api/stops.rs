@@ -148,6 +148,9 @@ pub struct DeparturesParams {
 pub struct DeparturesResponse {
     stop: StopRef,
     generated_at: DateTime<Tz>,
+    /// When the data was received from the upstream.
+    fetched_at: DateTime<Tz>,
+    /// The upstream is failing and this is the last good data (at most 2 minutes old).
     stale: bool,
     departures: Vec<DepartureView>,
 }
@@ -170,7 +173,8 @@ pub async fn departures(
         .ok_or_else(|| ApiError::InvalidRequest(format!("Invalid stop {stop:?}")))?;
     let filter = params.into_filter()?;
 
-    let data = state.departures.get(&stop_id).await?;
+    let fetched = state.departures.get(&stop_id).await?;
+    let data = &fetched.data;
     let now = state.clock.now();
     let departures = data
         .select(&filter, now)
@@ -184,7 +188,8 @@ pub async fn departures(
     Ok(Json(DeparturesResponse {
         stop: data.stop.clone(),
         generated_at: now.with_timezone(&TIME_ZONE).trunc_subsecs(0),
-        stale: false,
+        fetched_at: data.fetched_at.with_timezone(&TIME_ZONE).trunc_subsecs(0),
+        stale: fetched.stale,
         departures,
     }))
 }
