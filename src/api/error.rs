@@ -7,13 +7,17 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::{departures::DeparturesError, stops::IndexError, upstream::UpstreamError};
+use crate::{
+    departures::DeparturesError, favorites::FavoritesError, stops::IndexError,
+    upstream::UpstreamError,
+};
 
 /// Errors returned to API clients as `{"error": {"code": ..., "message": ...}}`.
 #[derive(Debug)]
 pub enum ApiError {
     InvalidRequest(String),
     StopNotFound(String),
+    FavoriteNotFound(i64),
     UpstreamTimeout,
     Upstream(String),
     /// The stop index has not been synced yet.
@@ -29,6 +33,11 @@ impl IntoResponse for ApiError {
                 StatusCode::NOT_FOUND,
                 "stop_not_found",
                 format!("Stop {stop} not found"),
+            ),
+            Self::FavoriteNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                "favorite_not_found",
+                format!("Favorite {id} not found"),
             ),
             Self::UpstreamTimeout => (
                 StatusCode::GATEWAY_TIMEOUT,
@@ -70,6 +79,13 @@ impl From<Arc<DeparturesError>> for ApiError {
 impl From<IndexError> for ApiError {
     fn from(err: IndexError) -> Self {
         tracing::error!("stop index: {err}");
+        Self::Internal
+    }
+}
+
+impl From<FavoritesError> for ApiError {
+    fn from(err: FavoritesError) -> Self {
+        tracing::error!("favorites: {err}");
         Self::Internal
     }
 }

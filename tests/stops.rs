@@ -5,26 +5,11 @@ use std::time::Duration;
 use axum::http::StatusCode;
 use gtt_personal_api::stops::sync::{SyncError, sync_once};
 use serde_json::{Value, json};
-use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
+use wiremock::{Mock, ResponseTemplate, matchers::method};
 
-use common::{TestApp, at, fixture, get};
+use common::{NOW, at, get, synced_app};
 
-const NOW: i64 = 1_793_291_033;
 const TIMEOUT: Duration = Duration::from_secs(2);
-
-/// App whose upstream serves `all_stops.json` (44 real stops around Porta Nuova and a few
-/// others), with the index already synced.
-async fn synced_app() -> (TestApp, MockServer) {
-    let server = MockServer::start().await;
-    Mock::given(method("POST"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(fixture("all_stops.json")))
-        .mount(&server)
-        .await;
-    let app = common::test_app(&server.uri(), at(NOW), TIMEOUT).await;
-    let count = sync_once(&app.stops, &app.upstream, at(NOW)).await.unwrap();
-    assert_eq!(count, 44);
-    (app, server)
-}
 
 fn ids(json: &Value) -> Vec<&str> {
     json["stops"]

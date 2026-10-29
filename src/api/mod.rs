@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, patch},
+};
 
 use crate::{
     departures::DeparturesService,
+    favorites::FavoriteStore,
     stops::{Feeds, StopIndex},
     time::Clock,
 };
 
 mod error;
+mod favorites;
 mod health;
 mod stops;
 
@@ -16,6 +21,7 @@ mod stops;
 pub struct AppState {
     pub departures: Arc<DeparturesService>,
     pub stops: StopIndex,
+    pub favorites: FavoriteStore,
     pub default_feeds: Feeds,
     pub clock: Arc<dyn Clock>,
 }
@@ -27,5 +33,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/stops/nearby", get(stops::nearby))
         .route("/api/stops/{stop}", get(stops::details))
         .route("/api/stops/{stop}/departures", get(stops::departures))
+        .route(
+            "/api/favorites",
+            get(favorites::list).post(favorites::create),
+        )
+        .route(
+            "/api/favorites/{id}",
+            patch(favorites::update).delete(favorites::delete),
+        )
         .with_state(state)
 }

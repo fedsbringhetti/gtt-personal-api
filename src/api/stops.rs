@@ -218,7 +218,7 @@ impl DeparturesParams {
 }
 
 /// Accepts a GTT code (`39`) or a full gtfsId (`gtt:39`, `2:S00219`).
-fn resolve_stop_id(input: &str) -> Option<String> {
+pub(super) fn resolve_stop_id(input: &str) -> Option<String> {
     let valid = |part: &str| {
         !part.is_empty()
             && part

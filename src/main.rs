@@ -5,6 +5,7 @@ use gtt_personal_api::{
     config::Config,
     db,
     departures::DeparturesService,
+    favorites::FavoriteStore,
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
     upstream::UpstreamClient,
@@ -44,7 +45,8 @@ async fn main() -> ExitCode {
         }
     };
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
-    let stops = StopIndex::new(pool);
+    let stops = StopIndex::new(pool.clone());
+    let favorites = FavoriteStore::new(pool);
     sync::spawn(
         stops.clone(),
         upstream.clone(),
@@ -58,6 +60,7 @@ async fn main() -> ExitCode {
             config.departures_cache_ttl,
         )),
         stops,
+        favorites,
         default_feeds: config.default_feeds.clone(),
         clock,
     };
