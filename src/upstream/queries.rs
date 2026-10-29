@@ -19,3 +19,17 @@ query StopDepartures($id: String!, $timeRange: Int!, $numberOfDepartures: Int!) 
     }
   }
 }";
+
+pub const ALL_STOPS: &str = "\
+query AllStops {
+  stops {
+    gtfsId
+    code
+    name
+    desc
+    lat
+    lon
+    vehicleMode
+    routes { gtfsId shortName mode }
+  }
+}";

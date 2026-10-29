@@ -11,7 +11,9 @@ use axum::{
 use chrono::{DateTime, Utc};
 use gtt_personal_api::{
     api::{self, AppState},
+    db,
     departures::DeparturesService,
+    stops::{Feeds, StopIndex},
     time::FixedClock,
     upstream::UpstreamClient,
 };
@@ -21,17 +23,43 @@ use tower::ServiceExt;
 /// First expected departure in `fixtures/stop_39.json` (17:23:53 on 2026-10-29).
 pub const STOP_39_FIRST_DEPARTURE: i64 = 1_793_291_033;
 
-pub fn app(upstream_url: &str, now: DateTime<Utc>, upstream_timeout: Duration) -> Router {
+pub struct TestApp {
+    pub router: Router,
+    pub stops: StopIndex,
+    pub upstream: UpstreamClient,
+}
+
+/// The app with an in-memory database, a fixed clock and default feeds `gtt`.
+pub async fn test_app(
+    upstream_url: &str,
+    now: DateTime<Utc>,
+    upstream_timeout: Duration,
+) -> TestApp {
     let upstream = UpstreamClient::new(upstream_url.parse().unwrap(), upstream_timeout).unwrap();
-    api::router(AppState {
-        departures: Arc::new(DeparturesService::new(upstream, Duration::from_secs(20))),
+    let stops = StopIndex::new(db::connect_in_memory().await.unwrap());
+    let router = api::router(AppState {
+        departures: Arc::new(DeparturesService::new(
+            upstream.clone(),
+            Duration::from_secs(20),
+        )),
+        stops: stops.clone(),
+        default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
         clock: Arc::new(FixedClock(now)),
-    })
+    });
+    TestApp {
+        router,
+        stops,
+        upstream,
+    }
+}
+
+pub async fn app(upstream_url: &str, now: DateTime<Utc>, upstream_timeout: Duration) -> Router {
+    test_app(upstream_url, now, upstream_timeout).await.router
 }
 
 /// An app whose upstream is never called.
-pub fn offline_app() -> Router {
-    app("http://127.0.0.1:9/", Utc::now(), Duration::from_secs(1))
+pub async fn offline_app() -> Router {
+    app("http://127.0.0.1:9/", Utc::now(), Duration::from_secs(1)).await
 }
 
 pub fn fixture(name: &str) -> serde_json::Value {

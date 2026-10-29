@@ -95,7 +95,7 @@ Everything through environment variables, with sensible defaults.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `BIND_ADDR` | `0.0.0.0:8080` | listen address |
-| `DATA_DIR` | `/data` | SQLite database directory |
+| `DATA_DIR` | `data` | SQLite database directory (the Docker image sets `/data`) |
 | `UPSTREAM_URL` | muoversiatorino URL | GraphQL endpoint |
 | `UPSTREAM_TIMEOUT_SECS` | `10` | upstream call timeout |
 | `DEPARTURES_CACHE_SECS` | `20` | departures cache lifetime |
@@ -140,10 +140,12 @@ CREATE TABLE stops (
   lat         REAL NOT NULL,
   lon         REAL NOT NULL,
   mode        TEXT,               -- BUS, TRAM, SUBWAY, RAIL, FUNICULAR
-  lines       TEXT NOT NULL       -- JSON: [{"id": "...", "name": "4", "mode": "TRAM"}]
+  lines       TEXT NOT NULL,      -- JSON: [{"id": "...", "name": "4", "mode": "TRAM"}]
+  search_name TEXT NOT NULL,      -- normalized name, used for ranking
+  search_text TEXT NOT NULL       -- normalized name + description, used for matching
 );
-CREATE INDEX stops_code ON stops(code);
-CREATE INDEX stops_latlon ON stops(lat, lon);
+CREATE INDEX stops_code ON stops(code COLLATE NOCASE);
+CREATE INDEX stops_lat_lon ON stops(lat, lon);
 
 -- normalized text (name + description + expanded abbreviations)
 CREATE VIRTUAL TABLE stops_fts USING fts5(id UNINDEXED, text, tokenize = 'trigram');
@@ -162,14 +164,15 @@ CREATE TABLE sync_state (
 
 ### Name normalization
 - Lowercase and accent removal.
-- Abbreviation expansion: `c.so` → `corso`, `v.` → `via`, `p.za` / `p.zza` → `piazza`, `l.go` → `largo`, `staz.` → `stazione`, `str.` → `strada`. The list is completed by looking at real names.
+- Abbreviation expansion, from the most frequent abbreviations in real names: `c.so` → `corso`, `v.` → `via`, `p.za` / `p.zza` → `piazza`, `v.le` → `viale`, `fraz.` → `frazione`, `bv.` → `bivio`, `m.to` → `monferrato`, `t.se` → `torinese`, and others (full list in `src/stops/normalize.rs`). Abbreviations ending with a dot also match when glued to the next word (`v.cavagnolo`).
+- Dotless forms (`cso`, `pza`) are expanded, and `santa` / `santo` / `sant` / `s.` all become `san`.
 - The same normalization is applied to the search text.
 
 ### Search
-1. If the search text is a code, an exact code match comes first.
-2. Full-text search with trigrams (also finds partial words, e.g. `nuov`).
-3. For texts shorter than 3 characters, `LIKE` is used as a fallback.
-4. Ordering: exact code, then FTS relevance, then feed (`gtt` before the others).
+1. A stop matches if its code or id equals the search text, or if every word of the search text appears in its name or description.
+2. Words of 3 or more characters use the trigram index (also finds partial words, e.g. `nuov`); shorter words must start a word (`LIKE`).
+3. Ordering: exact code or id; exact name; name starting with the text; name containing the text; match in the description only. Then `gtt` before other feeds, shorter names first, shorter codes first (`39` before `252`).
+4. Searches return `503 index_not_ready` until the first sync has completed.
 
 ### Nearby stops
 Computed locally, without calling the upstream: first a bounding-box filter on lat/lon (uses the index), then the exact distance (haversine) for ordering.
@@ -204,8 +207,8 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/stops?q=&feeds=&limit=` | search by name or code |
-| GET | `/api/stops/nearby?lat=&lon=&radius=&limit=` | nearby stops (default radius 300 m) |
+| GET | `/api/stops?q=&feeds=&limit=` | search by name or code (`feeds`: `all` or a list, default `DEFAULT_FEEDS`; `limit` 1–100, default 20) |
+| GET | `/api/stops/nearby?lat=&lon=&radius=&feeds=&limit=` | nearby stops with `distance_m` (radius 1–2000 m, default 300 m) |
 | GET | `/api/stops/{stop}` | stop details with lines |
 | GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures (`minutes` 1–120, default 60; `limit` 1–100, default 20) |
 | GET | `/api/favorites` | list favorites |
@@ -252,6 +255,8 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 | Unknown stop | 404 | `stop_not_found` |
 | Upstream error | 502 | `upstream_error` |
 | Upstream timeout | 504 | `upstream_timeout` |
+| Stop index not synced yet | 503 | `index_not_ready` |
+| Database error | 500 | `internal_error` |
 
 ## 12. Docker
 

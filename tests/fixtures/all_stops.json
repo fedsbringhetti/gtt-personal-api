@@ -1,0 +1,1335 @@
+{
+ "data": {
+  "stops": [
+   {
+    "gtfsId": "2:830000219",
+    "code": null,
+    "name": "TORINO PORTA NUOVA",
+    "desc": null,
+    "lat": 45.060971,
+    "lon": 7.677471,
+    "vehicleMode": "RAIL",
+    "routes": [
+     {
+      "gtfsId": "2:720083",
+      "shortName": "SFM",
+      "mode": "RAIL"
+     },
+     {
+      "gtfsId": "2:10083",
+      "shortName": "REG",
+      "mode": "RAIL"
+     },
+     {
+      "gtfsId": "2:620083",
+      "shortName": "RV",
+      "mode": "RAIL"
+     },
+     {
+      "gtfsId": "2:70083",
+      "shortName": "BUS",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "2:340083",
+      "shortName": "ICN",
+      "mode": "RAIL"
+     },
+     {
+      "gtfsId": "2:50083",
+      "shortName": "IC",
+      "mode": "RAIL"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:000035",
+    "code": "000035",
+    "name": "To - Cso Vittorio Emanuele 67",
+    "desc": "TO - Cso Vittorio Emanuele 67",
+    "lat": 45.064069999999546,
+    "lon": 7.675129999999523,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:282-275",
+      "shortName": "282-275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:000036",
+    "code": "000036",
+    "name": "V.Eman.-Re Umberto",
+    "desc": "Cso Vittorio Emanuele-Cso Re Umberto",
+    "lat": 45.06428585281762,
+    "lon": 7.674816324953847,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275",
+      "shortName": "275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275-282",
+      "shortName": "285-275-282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275",
+      "shortName": "285-275",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:000253",
+    "code": "000253",
+    "name": "To - Porta Nuova (Ingresso Via Sacchi)",
+    "desc": "TO - Porta Nuova (Ingresso Via Sacchi)",
+    "lat": 45.06255999999954,
+    "lon": 7.677429999999529,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275",
+      "shortName": "275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275-282",
+      "shortName": "285-275-282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275",
+      "shortName": "285-275",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:000913",
+    "code": "000913",
+    "name": "piazza carlo felice",
+    "desc": "TO - piazza Carlo Felice",
+    "lat": 45.06351999999954,
+    "lon": 7.680139999999532,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:268",
+      "shortName": "Arriva-268",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:001915",
+    "code": "001915",
+    "name": "To - Via Sacchi 22",
+    "desc": "TO - Via Sacchi 22",
+    "lat": 45.060269999999534,
+    "lon": 7.675599999999526,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275",
+      "shortName": "275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:282-275",
+      "shortName": "282-275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275-285",
+      "shortName": "275-285",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:001916",
+    "code": "001916",
+    "name": "To - Via Sacchi 11",
+    "desc": "TO - Via Sacchi 11",
+    "lat": 45.06069999999953,
+    "lon": 7.675999999999525,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275",
+      "shortName": "275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275-282",
+      "shortName": "285-275-282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:285-275",
+      "shortName": "285-275",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "3:059693",
+    "code": "059693",
+    "name": "To-C.So",
+    "desc": "TO-c.so V.Eman. II-Porta Nuova",
+    "lat": 45.06319999999953,
+    "lon": 7.677299999999528,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "3:282",
+      "shortName": "282",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275",
+      "shortName": "275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:282-275",
+      "shortName": "282-275",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:275-285",
+      "shortName": "275-285",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "3:284",
+      "shortName": "284",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:190662",
+    "code": "190662",
+    "name": "S.ANNA COLLAREA - San Bernardo",
+    "desc": null,
+    "lat": 44.31294,
+    "lon": 7.85361,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B58A",
+      "shortName": "58",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B58",
+      "shortName": "58",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:23022",
+    "code": "23022",
+    "name": "Via S.Anna 67",
+    "desc": null,
+    "lat": 44.40528,
+    "lon": 7.79741,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B176",
+      "shortName": "176",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B712",
+      "shortName": "12",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B721",
+      "shortName": "21",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B710",
+      "shortName": "10",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:23023",
+    "code": "23023",
+    "name": "Via S.Anna / Via Ciri",
+    "desc": null,
+    "lat": 44.40444,
+    "lon": 7.80096,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B176",
+      "shortName": "176",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B712",
+      "shortName": "12",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B721",
+      "shortName": "21",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B710",
+      "shortName": "10",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:23025",
+    "code": "23025",
+    "name": "Via S.Anna 12",
+    "desc": null,
+    "lat": 44.40266,
+    "lon": 7.80658,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B176",
+      "shortName": "176",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B710",
+      "shortName": "10",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:26062",
+    "code": "26062",
+    "name": "CARDE' - Corso Vittorio Emanuele II",
+    "desc": null,
+    "lat": 44.74542,
+    "lon": 7.47782,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:299V",
+      "shortName": "299V",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B112",
+      "shortName": "112",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:39",
+    "code": "39",
+    "name": "SAN CHIAFFREDO - V. Laghi / V.Ardissone",
+    "desc": null,
+    "lat": 44.48065,
+    "lon": 7.50485,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B91",
+      "shortName": "91",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:188CN2",
+      "shortName": "188",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B115",
+      "shortName": "115",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:188CN3",
+      "shortName": "188",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:530B",
+      "shortName": "30B",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B95CN",
+      "shortName": "95",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B106CN",
+      "shortName": "106CN",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:40",
+    "code": "40",
+    "name": "SAN CHIAFFREDO - Orchidea",
+    "desc": null,
+    "lat": 44.47639,
+    "lon": 7.50776,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:B91",
+      "shortName": "91",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:188CN2",
+      "shortName": "188",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B115",
+      "shortName": "115",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:188CN3",
+      "shortName": "188",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:530B",
+      "shortName": "30B",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B95CN",
+      "shortName": "95",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:B106CN",
+      "shortName": "106CN",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:45092",
+    "code": "45092",
+    "name": "TORINO - C.so Matteotti / Via Arsenale",
+    "desc": null,
+    "lat": 45.065568,
+    "lon": 7.677191,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:VC804",
+      "shortName": "804",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:45093",
+    "code": "45093",
+    "name": "TORINO - C.so Matteotti / Via Arsenale",
+    "desc": null,
+    "lat": 45.06564,
+    "lon": 7.676736,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:VC804",
+      "shortName": "804",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "4:6062",
+    "code": "6062",
+    "name": "CARDE' - Corso Vittorio Emanuele II",
+    "desc": null,
+    "lat": 44.74503,
+    "lon": 7.47771,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "4:299U",
+      "shortName": "299U",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "4:299V",
+      "shortName": "299V",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1415",
+    "code": "1415",
+    "name": "VITTORIO EMANUELE II CAP",
+    "desc": "VITTORIO EMANUELE II - PORTA NUOVA M1",
+    "lat": 45.0621,
+    "lon": 7.6812,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:33U",
+      "shortName": "33",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1460",
+    "code": "1460",
+    "name": "SANT'ANNA N.79",
+    "desc": "STR. SANT'ANNA N.79",
+    "lat": 45.05552,
+    "lon": 7.72629,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:54U",
+      "shortName": "54",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1462",
+    "code": "1462",
+    "name": "SANT'ANNA N.74",
+    "desc": "STR. SANT'ANNA FRONTE N.74",
+    "lat": 45.05487,
+    "lon": 7.72709,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:54U",
+      "shortName": "54",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1463",
+    "code": "1463",
+    "name": "SANT'ANNA N.80",
+    "desc": "STR. SANT'ANNA N.80",
+    "lat": 45.05328,
+    "lon": 7.72893,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:54U",
+      "shortName": "54",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1464",
+    "code": "1464",
+    "name": "SANT'ANNA N.80",
+    "desc": "STR. SANT'ANNA FRONTE N.78 BIS",
+    "lat": 45.05357,
+    "lon": 7.72924,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:54U",
+      "shortName": "54",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1682",
+    "code": "1682",
+    "name": "ARSENALE",
+    "desc": "ARSENALE (STAZIONE PORTA NUOVA)",
+    "lat": 45.06556,
+    "lon": 7.67718,
+    "vehicleMode": "TRAM",
+    "routes": [
+     {
+      "gtfsId": "gtt:ST1U",
+      "shortName": "STAR 1",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:55U",
+      "shortName": "55",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:15U",
+      "shortName": "15",
+      "mode": "TRAM"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1830",
+    "code": "1830",
+    "name": "VITTORIO EMANUELE II CAP",
+    "desc": "VITTORIO EMANUELE II",
+    "lat": 45.06207,
+    "lon": 7.68068,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:61U",
+      "shortName": "61",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1915",
+    "code": "1915",
+    "name": "STATI UNITI",
+    "desc": "V. SACCHI DOPO C. STATI UNITI",
+    "lat": 45.06026,
+    "lon": 7.6756,
+    "vehicleMode": "TRAM",
+    "routes": [
+     {
+      "gtfsId": "gtt:S04U",
+      "shortName": "S04",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:4U",
+      "shortName": "4",
+      "mode": "TRAM"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1916",
+    "code": "1916",
+    "name": "STATI UNITI",
+    "desc": "V. SACCHI / C. STATI UNITI",
+    "lat": 45.06063,
+    "lon": 7.67599,
+    "vehicleMode": "TRAM",
+    "routes": [
+     {
+      "gtfsId": "gtt:S04U",
+      "shortName": "S04",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:4U",
+      "shortName": "4",
+      "mode": "TRAM"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1945",
+    "code": "1945",
+    "name": "CARLO ALBERTO",
+    "desc": "C. VITTORIO EMAN. II N.39",
+    "lat": 45.06158,
+    "lon": 7.6819,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:61U",
+      "shortName": "61",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:24U",
+      "shortName": "24",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68BU",
+      "shortName": "68+",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:6U",
+      "shortName": "6",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:93BU",
+      "shortName": "93/",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:S05U",
+      "shortName": "S05",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:33U",
+      "shortName": "33",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:1946",
+    "code": "1946",
+    "name": "CARLO ALBERTO",
+    "desc": "C. VITTORIO EMAN. II N.48 H",
+    "lat": 45.06174,
+    "lon": 7.68192,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:6U",
+      "shortName": "6",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:7U",
+      "shortName": "7",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:33U",
+      "shortName": "33",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:S05U",
+      "shortName": "S05",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68BU",
+      "shortName": "68+",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:93BU",
+      "shortName": "93/",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:61U",
+      "shortName": "61",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:24U",
+      "shortName": "24",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:2010",
+    "code": "2010",
+    "name": "ARSENALE",
+    "desc": "ARSENALE (STAZIONE PORTA NUOVA)",
+    "lat": 45.06562,
+    "lon": 7.67678,
+    "vehicleMode": "TRAM",
+    "routes": [
+     {
+      "gtfsId": "gtt:55U",
+      "shortName": "55",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:15U",
+      "shortName": "15",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:ST1U",
+      "shortName": "STAR 1",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:250",
+    "code": "250",
+    "name": "SAN QUINTINO",
+    "desc": "V. ARSENALE / V. SAN QUINTINO",
+    "lat": 45.06476,
+    "lon": 7.67725,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:S04U",
+      "shortName": "S04",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:58U",
+      "shortName": "58",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:11U",
+      "shortName": "11",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:58BU",
+      "shortName": "58/",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:4U",
+      "shortName": "4",
+      "mode": "TRAM"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:252",
+    "code": "252",
+    "name": "PORTA NUOVA",
+    "desc": "PORTA NUOVA (STAZIONE)",
+    "lat": 45.06254,
+    "lon": 7.67561,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:58U",
+      "shortName": "58",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:11U",
+      "shortName": "11",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:12U",
+      "shortName": "12",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:58BU",
+      "shortName": "58/",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:253",
+    "code": "253",
+    "name": "PORTA NUOVA",
+    "desc": "PORTA NUOVA - M1 - STAZIONE",
+    "lat": 45.06263,
+    "lon": 7.6775,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:58BU",
+      "shortName": "58/",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:12U",
+      "shortName": "12",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:S04U",
+      "shortName": "S04",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:58U",
+      "shortName": "58",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:4U",
+      "shortName": "4",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:11U",
+      "shortName": "11",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:254",
+    "code": "254",
+    "name": "SAN SECONDO",
+    "desc": "C. STATI UNITI / V. SAN SECONDO",
+    "lat": 45.06137,
+    "lon": 7.67442,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:58BU",
+      "shortName": "58/",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:12U",
+      "shortName": "12",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:58U",
+      "shortName": "58",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:11U",
+      "shortName": "11",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:3492",
+    "code": "3492",
+    "name": "PORTA NUOVA",
+    "desc": "PORTA NUOVA - M1 - STAZIONE",
+    "lat": 45.06237,
+    "lon": 7.67718,
+    "vehicleMode": "TRAM",
+    "routes": [
+     {
+      "gtfsId": "gtt:S04U",
+      "shortName": "S04",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:4U",
+      "shortName": "4",
+      "mode": "TRAM"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:35",
+    "code": "35",
+    "name": "RE UMBERTO",
+    "desc": "RE UMBERTO - M1",
+    "lat": 45.064,
+    "lon": 7.67515,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:64U",
+      "shortName": "64",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9BU",
+      "shortName": "9B",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:M1SU",
+      "shortName": "M1S",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:3582",
+    "code": "3582",
+    "name": "CARLO FELICE CAP",
+    "desc": "CARLO FELICE - PORTA NUOVA - M1",
+    "lat": 45.06371,
+    "lon": 7.67905,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:6U",
+      "shortName": "6",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:35U",
+      "shortName": "35",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68BU",
+      "shortName": "68+",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:3587",
+    "code": "3587",
+    "name": "VITTORIO EMANUELE II CAP",
+    "desc": "VITTORIO EMANUELE II",
+    "lat": 45.06221,
+    "lon": 7.68091,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:64U",
+      "shortName": "64",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:3588",
+    "code": "3588",
+    "name": "VITTORIO EMANUELE II CAP",
+    "desc": "VITTORIO EMANUELE II",
+    "lat": 45.06362,
+    "lon": 7.67702,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:12U",
+      "shortName": "12",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:36",
+    "code": "36",
+    "name": "RE UMBERTO",
+    "desc": "RE UMBERTO - M1",
+    "lat": 45.06428,
+    "lon": 7.67482,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:7U",
+      "shortName": "7",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:M1SU",
+      "shortName": "M1S",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:64U",
+      "shortName": "64",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:11U",
+      "shortName": "11",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:39",
+    "code": "39",
+    "name": "PORTA NUOVA",
+    "desc": "PORTA NUOVA - M1 - STAZIONE",
+    "lat": 45.06256,
+    "lon": 7.67898,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:64U",
+      "shortName": "64",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:35U",
+      "shortName": "35",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9BU",
+      "shortName": "9B",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:61U",
+      "shortName": "61",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:M1SU",
+      "shortName": "M1S",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:68BU",
+      "shortName": "68+",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:6U",
+      "shortName": "6",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:33U",
+      "shortName": "33",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:40",
+    "code": "40",
+    "name": "PORTA NUOVA",
+    "desc": "PORTA NUOVA - M1 - STAZIONE",
+    "lat": 45.06285,
+    "lon": 7.67887,
+    "vehicleMode": "BUS",
+    "routes": [
+     {
+      "gtfsId": "gtt:7U",
+      "shortName": "7",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:33U",
+      "shortName": "33",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:9U",
+      "shortName": "9",
+      "mode": "TRAM"
+     },
+     {
+      "gtfsId": "gtt:68U",
+      "shortName": "68",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:M1SU",
+      "shortName": "M1S",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:64U",
+      "shortName": "64",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:52U",
+      "shortName": "52",
+      "mode": "BUS"
+     },
+     {
+      "gtfsId": "gtt:67U",
+      "shortName": "67",
+      "mode": "BUS"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:8220",
+    "code": null,
+    "name": "METRO XVIII DICEMBRE",
+    "desc": "XVIII DICEMBRE M1",
+    "lat": 45.07377,
+    "lon": 7.66805,
+    "vehicleMode": "SUBWAY",
+    "routes": [
+     {
+      "gtfsId": "gtt:METROU",
+      "shortName": "M1",
+      "mode": "SUBWAY"
+     }
+    ]
+   },
+   {
+    "gtfsId": "gtt:8224",
+    "code": null,
+    "name": "METRO PORTA NUOVA",
+    "desc": "PORTA NUOVA M1",
+    "lat": 45.06276,
+    "lon": 7.679,
+    "vehicleMode": "SUBWAY",
+    "routes": [
+     {
+      "gtfsId": "gtt:METROU",
+      "shortName": "M1",
+      "mode": "SUBWAY"
+     }
+    ]
+   }
+  ]
+ }
+}

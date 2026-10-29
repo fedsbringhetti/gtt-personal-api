@@ -9,12 +9,132 @@ use serde::{Deserialize, Serialize};
 use super::{AppState, error::ApiError};
 use crate::{
     departures::{Departure, FETCH_WINDOW, Filter, StopRef},
+    stops::{Feeds, NearbyStop, StopInfo},
     time::TIME_ZONE,
 };
 
 const DEFAULT_MINUTES: i64 = 60;
 const DEFAULT_LIMIT: usize = 20;
 const MAX_LIMIT: usize = 100;
+const MAX_QUERY_LEN: usize = 100;
+const DEFAULT_RADIUS_M: f64 = 300.0;
+const MAX_RADIUS_M: f64 = 2_000.0;
+
+#[derive(Debug, Serialize)]
+pub struct StopsResponse<T> {
+    stops: Vec<T>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SearchParams {
+    q: Option<String>,
+    /// `all` or a comma-separated list; defaults to `DEFAULT_FEEDS`.
+    feeds: Option<String>,
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NearbyParams {
+    lat: Option<f64>,
+    lon: Option<f64>,
+    radius: Option<f64>,
+    feeds: Option<String>,
+    limit: Option<usize>,
+}
+
+pub async fn search(
+    State(state): State<AppState>,
+    params: Result<Query<SearchParams>, QueryRejection>,
+) -> Result<Json<StopsResponse<StopInfo>>, ApiError> {
+    let Query(params) = params.map_err(|err| ApiError::InvalidRequest(err.body_text()))?;
+    let query = params.q.as_deref().map(str::trim).unwrap_or_default();
+    if query.is_empty() || query.chars().count() > MAX_QUERY_LEN {
+        return Err(ApiError::InvalidRequest(format!(
+            "q must be between 1 and {MAX_QUERY_LEN} characters"
+        )));
+    }
+    let feeds = feeds_or_default(params.feeds, &state.default_feeds)?;
+    let limit = check_range("limit", params.limit.unwrap_or(DEFAULT_LIMIT), 1, MAX_LIMIT)?;
+
+    ensure_index_ready(&state).await?;
+    let stops = state.stops.search(query, &feeds, limit as u32).await?;
+    Ok(Json(StopsResponse { stops }))
+}
+
+pub async fn nearby(
+    State(state): State<AppState>,
+    params: Result<Query<NearbyParams>, QueryRejection>,
+) -> Result<Json<StopsResponse<NearbyStop>>, ApiError> {
+    let Query(params) = params.map_err(|err| ApiError::InvalidRequest(err.body_text()))?;
+    let lat = params
+        .lat
+        .ok_or_else(|| ApiError::InvalidRequest("lat is required".to_owned()))?;
+    let lon = params
+        .lon
+        .ok_or_else(|| ApiError::InvalidRequest("lon is required".to_owned()))?;
+    let lat = check_range("lat", lat, -90.0, 90.0)?;
+    let lon = check_range("lon", lon, -180.0, 180.0)?;
+    let radius = check_range(
+        "radius",
+        params.radius.unwrap_or(DEFAULT_RADIUS_M),
+        1.0,
+        MAX_RADIUS_M,
+    )?;
+    let feeds = feeds_or_default(params.feeds, &state.default_feeds)?;
+    let limit = check_range("limit", params.limit.unwrap_or(DEFAULT_LIMIT), 1, MAX_LIMIT)?;
+
+    ensure_index_ready(&state).await?;
+    let stops = state.stops.nearby(lat, lon, radius, &feeds, limit).await?;
+    Ok(Json(StopsResponse { stops }))
+}
+
+pub async fn details(
+    State(state): State<AppState>,
+    Path(stop): Path<String>,
+) -> Result<Json<StopInfo>, ApiError> {
+    let stop_id = resolve_stop_id(&stop)
+        .ok_or_else(|| ApiError::InvalidRequest(format!("Invalid stop {stop:?}")))?;
+    ensure_index_ready(&state).await?;
+    state
+        .stops
+        .get(&stop_id)
+        .await?
+        .map(Json)
+        .ok_or(ApiError::StopNotFound(stop_id))
+}
+
+/// Before the first sync the index is empty, and "no results" would be misleading.
+async fn ensure_index_ready(state: &AppState) -> Result<(), ApiError> {
+    match state.stops.last_sync().await? {
+        Some(_) => Ok(()),
+        None => Err(ApiError::IndexNotReady),
+    }
+}
+
+fn feeds_or_default(feeds: Option<String>, default: &Feeds) -> Result<Feeds, ApiError> {
+    match feeds {
+        Some(feeds) => feeds
+            .parse()
+            .map_err(|err| ApiError::InvalidRequest(format!("feeds: {err}"))),
+        None => Ok(default.clone()),
+    }
+}
+
+/// `value` if it is within `min..=max` (NaN never is).
+fn check_range<T: PartialOrd + std::fmt::Display>(
+    name: &str,
+    value: T,
+    min: T,
+    max: T,
+) -> Result<T, ApiError> {
+    if value >= min && value <= max {
+        Ok(value)
+    } else {
+        Err(ApiError::InvalidRequest(format!(
+            "{name} must be between {min} and {max}"
+        )))
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct DeparturesParams {
@@ -72,19 +192,13 @@ pub async fn departures(
 impl DeparturesParams {
     fn into_filter(self) -> Result<Filter, ApiError> {
         let max_minutes = (FETCH_WINDOW.as_secs() / 60) as i64;
-        let minutes = self.minutes.unwrap_or(DEFAULT_MINUTES);
-        if !(1..=max_minutes).contains(&minutes) {
-            return Err(ApiError::InvalidRequest(format!(
-                "minutes must be between 1 and {max_minutes}"
-            )));
-        }
-
-        let limit = self.limit.unwrap_or(DEFAULT_LIMIT);
-        if !(1..=MAX_LIMIT).contains(&limit) {
-            return Err(ApiError::InvalidRequest(format!(
-                "limit must be between 1 and {MAX_LIMIT}"
-            )));
-        }
+        let minutes = check_range(
+            "minutes",
+            self.minutes.unwrap_or(DEFAULT_MINUTES),
+            1,
+            max_minutes,
+        )?;
+        let limit = check_range("limit", self.limit.unwrap_or(DEFAULT_LIMIT), 1, MAX_LIMIT)?;
 
         let lines = self
             .lines
@@ -150,5 +264,13 @@ mod tests {
         assert_eq!(minutes_until(at(179), now), 2);
         assert_eq!(minutes_until(at(30), now), 0);
         assert_eq!(minutes_until(at(-30), now), 0);
+    }
+
+    #[test]
+    fn check_range_rejects_out_of_range_and_nan() {
+        assert!(check_range("x", 5, 1, 10).is_ok());
+        assert!(check_range("x", 0, 1, 10).is_err());
+        assert!(check_range("x", 11, 1, 10).is_err());
+        assert!(check_range("x", f64::NAN, -90.0, 90.0).is_err());
     }
 }

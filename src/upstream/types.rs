@@ -50,3 +50,29 @@ pub struct Route {
     /// `BUS`, `TRAM`, `SUBWAY`, `RAIL`, ...
     pub mode: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct AllStopsData {
+    pub stops: Vec<IndexStop>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexStop {
+    pub gtfs_id: String,
+    pub code: Option<String>,
+    pub name: Option<String>,
+    pub desc: Option<String>,
+    pub lat: f64,
+    pub lon: f64,
+    pub vehicle_mode: Option<String>,
+    pub routes: Option<Vec<RouteRef>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RouteRef {
+    pub gtfs_id: String,
+    pub short_name: Option<String>,
+    pub mode: Option<String>,
+}
