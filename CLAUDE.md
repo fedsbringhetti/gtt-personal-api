@@ -29,7 +29,8 @@ Decisions already made are recorded in these files: follow them, and when a choi
 ## Stack
 
 - Rust: `axum`, `tokio`, `reqwest` (rustls), `sqlx` + SQLite (FTS5), `serde`, `chrono` + `chrono-tz`, `moka`, `tracing`, `thiserror`.
-- Multi-stage Docker for `linux/arm64`; images on `ghcr.io/fedsbringhetti/gtt-personal-api`.
+- Multi-stage Docker for `linux/arm64`; public images on Docker Hub as `federicosbringhetti/gtt-personal-api`.
+- Deployment follows the home server conventions in [docs/deploy.md](docs/deploy.md): host port 8100, bind mount `./data`, secrets only in `.env`.
 
 ## Data source
 

@@ -5,6 +5,10 @@ Inspired by [madbob/gtt-pirate-api](https://github.com/madbob/gtt-pirate-api).
 
 See [PLAN.md](PLAN.md) for phases and decisions.
 
+## Running with Docker
+
+See [docs/deploy.md](docs/deploy.md) for building the arm64 image, pushing it to Docker Hub and running it on the home server with `docker-compose.yml` (host port 8100). Copy `.env.example` to `.env` for the settings.
+
 ## Running locally
 
 ```bash

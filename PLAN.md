@@ -37,8 +37,8 @@ This document defines the phases. The detailed plan for each phase is written to
 - **Language**: everything in the repository is in English: file and directory names, document contents, code, identifiers, branch names, commit messages, PR titles and descriptions.
 - **Branches**: `main` always works. Every change starts from `main` in a short-lived branch (`feat/...`, `fix/...`, `docs/...`) and merges back through a PR once CI (`cargo fmt`, `cargo clippy`, `cargo test`) passes. No `dev` branch.
 - **Releases**: semantic version tags on `main` (`v0.1.0` at the end of Phase 1, `v0.2.0` at the end of Phase 2, ...). To try a version on the Pi before releasing it, use a pre-release tag (`v0.2.0-rc1`).
-- **Docker images**: built on the Mac for `linux/arm64` and pushed to `ghcr.io/fedsbringhetti/gtt-personal-api`, tagged with the version and `latest`.
-- **Deployment**: on the Orange Pi the compose file pins an exact version (e.g. `:0.1.0`), never `latest`. Rolling back means changing the tag.
+- **Docker images**: built on the Mac for `linux/arm64` and pushed to Docker Hub as `federicosbringhetti/gtt-personal-api` (public), tagged with the version and `latest`.
+- **Deployment**: on the home server in `/home/federico/gtt-personal-api/`, host port 8100, data in the `./data` bind mount. The compose file pins an exact version (e.g. `:0.1.0`), never `latest`; rolling back means changing the tag. Steps in [docs/deploy.md](docs/deploy.md).
 
 ---
 
