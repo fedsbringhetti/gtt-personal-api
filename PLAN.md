@@ -72,7 +72,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - Send a test notification for a rule
 - Alert myself when the upstream stops working
 
-**Detailed plan**: _to be written_
+**Detailed plan**: [docs/phase-2.md](docs/phase-2.md) (draft)
 
 ---
 
@@ -87,3 +87,21 @@ This document defines the phases. The detailed plan for each phase is written to
 - Management of favorites and rules
 
 **Detailed plan**: _to be written_
+
+---
+
+## Future ideas
+
+Not planned in any phase yet.
+
+### Real-time vehicle positions
+
+Found on 2026-10-29 by inspecting [InfomezziMap](https://infomezzi.marmox.to.it/immap/).
+
+- **Source**: the 5T MQTT broker at `wss://mapi.5t.torino.it/scre`, the same one used by muoversiatorino.it.
+- **Topics**: subscribe to `/<line>/#` (or `#` for all lines); messages arrive on `/<line>/<vehicleId>`.
+- **Payload**: JSON array `[lat, lon, heading, ?, tripId, direction, nextStop, ...]`; a longer array marks a full vehicle.
+- **Possible uses**: a vehicle map in the frontend; "your bus is N stops away" during trip tracking; earlier detection of runs that never started.
+- **Open question**: the site connects with `Origin: https://www.muoversiatorino.it`. Using the broker from this service would mean presenting the same origin. To decide before any work starts.
+- **Not verified**: whether the broker accepts other origins, and whether `tripId` matches the OpenTripPlanner `trip.gtfsId`.
+- **Not to use**: InfomezziMap's own `getWsData.php` endpoint; it is a private server with its own token.
