@@ -1,0 +1,1179 @@
+{
+ "data": {
+  "stop": {
+   "gtfsId": "gtt:39",
+   "code": "39",
+   "name": "PORTA NUOVA",
+   "stoptimesWithoutPatterns": [
+    {
+     "scheduledDeparture": 62640,
+     "realtimeDeparture": 62633,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459721U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 62737,
+     "realtimeDeparture": 62657,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436808U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 62837,
+     "realtimeDeparture": 62817,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443061U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 62160,
+     "realtimeDeparture": 62895,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441302U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 62702,
+     "realtimeDeparture": 63014,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441365U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 62490,
+     "realtimeDeparture": 63132,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440951U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63231,
+     "realtimeDeparture": 63231,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439268U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63000,
+     "realtimeDeparture": 63310,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441307U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63250,
+     "realtimeDeparture": 63317,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440339U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63510,
+     "realtimeDeparture": 63392,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440875U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63540,
+     "realtimeDeparture": 63540,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459716U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63542,
+     "realtimeDeparture": 63542,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441379U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63617,
+     "realtimeDeparture": 63617,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443094U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63666,
+     "realtimeDeparture": 63666,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+     "trip": {
+      "gtfsId": "gtt:28440116U",
+      "tripHeadsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+      "route": {
+       "shortName": "6",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63900,
+     "realtimeDeparture": 63900,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441209U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 63577,
+     "realtimeDeparture": 64122,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436765U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64131,
+     "realtimeDeparture": 64131,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439281U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64150,
+     "realtimeDeparture": 64142,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440363U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64470,
+     "realtimeDeparture": 64310,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440896U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64397,
+     "realtimeDeparture": 64351,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28442955U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64382,
+     "realtimeDeparture": 64382,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441387U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64357,
+     "realtimeDeparture": 64398,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436682U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64500,
+     "realtimeDeparture": 64614,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459743U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65031,
+     "realtimeDeparture": 64841,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439196U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64866,
+     "realtimeDeparture": 64866,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+     "trip": {
+      "gtfsId": "gtt:28440147U",
+      "tripHeadsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+      "route": {
+       "shortName": "6",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65050,
+     "realtimeDeparture": 65050,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440429U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65197,
+     "realtimeDeparture": 65178,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436704U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65222,
+     "realtimeDeparture": 65222,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441394U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65237,
+     "realtimeDeparture": 65241,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28442992U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 64800,
+     "realtimeDeparture": 65295,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441323U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65460,
+     "realtimeDeparture": 65486,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459641U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65700,
+     "realtimeDeparture": 65716,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441333U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65484,
+     "realtimeDeparture": 65730,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440913U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65931,
+     "realtimeDeparture": 65931,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439296U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65950,
+     "realtimeDeparture": 65950,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440299U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 65977,
+     "realtimeDeparture": 65977,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436782U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66062,
+     "realtimeDeparture": 66062,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441366U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66077,
+     "realtimeDeparture": 66077,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443001U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66186,
+     "realtimeDeparture": 66186,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+     "trip": {
+      "gtfsId": "gtt:28440088U",
+      "tripHeadsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+      "route": {
+       "shortName": "6",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66360,
+     "realtimeDeparture": 66419,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459658U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66564,
+     "realtimeDeparture": 66564,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440934U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66817,
+     "realtimeDeparture": 66817,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436724U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66850,
+     "realtimeDeparture": 66850,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440410U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66857,
+     "realtimeDeparture": 66857,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443018U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66660,
+     "realtimeDeparture": 66875,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441257U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66902,
+     "realtimeDeparture": 66902,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441380U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 66831,
+     "realtimeDeparture": 67027,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439225U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67320,
+     "realtimeDeparture": 67320,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459674U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67500,
+     "realtimeDeparture": 67500,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441351U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67506,
+     "realtimeDeparture": 67506,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+     "trip": {
+      "gtfsId": "gtt:28440117U",
+      "tripHeadsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+      "route": {
+       "shortName": "6",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67524,
+     "realtimeDeparture": 67524,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440841U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67637,
+     "realtimeDeparture": 67637,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443036U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67742,
+     "realtimeDeparture": 67742,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441388U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67750,
+     "realtimeDeparture": 67750,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440384U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67791,
+     "realtimeDeparture": 67791,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439301U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 67597,
+     "realtimeDeparture": 67915,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436799U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68280,
+     "realtimeDeparture": 68280,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459702U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68340,
+     "realtimeDeparture": 68340,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441269U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68409,
+     "realtimeDeparture": 68409,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28442974U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68484,
+     "realtimeDeparture": 68484,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440952U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68582,
+     "realtimeDeparture": 68582,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441395U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68437,
+     "realtimeDeparture": 68625,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436740U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68650,
+     "realtimeDeparture": 68650,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440320U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68684,
+     "realtimeDeparture": 68684,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439292U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 68706,
+     "realtimeDeparture": 68706,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+     "trip": {
+      "gtfsId": "gtt:28440148U",
+      "tripHeadsign": "VAL SAN MARTINO, PIAZZA HERMADA",
+      "route": {
+       "shortName": "6",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69180,
+     "realtimeDeparture": 69180,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "BORGATA ROSA, VIA CAFASSO",
+     "trip": {
+      "gtfsId": "gtt:28441242U",
+      "tripHeadsign": "BORGATA ROSA, VIA CAFASSO",
+      "route": {
+       "shortName": "68",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69189,
+     "realtimeDeparture": 69189,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+     "trip": {
+      "gtfsId": "gtt:28443079U",
+      "tripHeadsign": "SAN SALVARIO, CORSO D'AZEGLIO (TO EXPO)",
+      "route": {
+       "shortName": "9",
+       "mode": "TRAM"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69221,
+     "realtimeDeparture": 69221,
+     "realtime": true,
+     "realtimeState": "UPDATED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28436666U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "33",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69300,
+     "realtimeDeparture": 69300,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+     "trip": {
+      "gtfsId": "gtt:28459765U",
+      "tripHeadsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
+      "route": {
+       "shortName": "67",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69422,
+     "realtimeDeparture": 69422,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "CAMPUS EINAUDI, CORSO TORTONA",
+     "trip": {
+      "gtfsId": "gtt:28441367U",
+      "tripHeadsign": "CAMPUS EINAUDI, CORSO TORTONA",
+      "route": {
+       "shortName": "68+",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69434,
+     "realtimeDeparture": 69434,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440340U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "61",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69450,
+     "realtimeDeparture": 69450,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+     "trip": {
+      "gtfsId": "gtt:28440876U",
+      "tripHeadsign": "PORTA NUOVA, C. VITTORIO EMANUELE II",
+      "route": {
+       "shortName": "64",
+       "mode": "BUS"
+      }
+     }
+    },
+    {
+     "scheduledDeparture": 69584,
+     "realtimeDeparture": 69584,
+     "realtime": false,
+     "realtimeState": "SCHEDULED",
+     "serviceDay": 1793228400,
+     "headsign": "VAL SALICE, PIAZZALE ADUA",
+     "trip": {
+      "gtfsId": "gtt:28439253U",
+      "tripHeadsign": "VAL SALICE, PIAZZALE ADUA",
+      "route": {
+       "shortName": "52",
+       "mode": "BUS"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

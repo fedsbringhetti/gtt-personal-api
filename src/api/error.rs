@@ -1,0 +1,55 @@
+use std::sync::Arc;
+
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde_json::json;
+
+use crate::{departures::DeparturesError, upstream::UpstreamError};
+
+/// Errors returned to API clients as `{"error": {"code": ..., "message": ...}}`.
+#[derive(Debug)]
+pub enum ApiError {
+    InvalidRequest(String),
+    StopNotFound(String),
+    UpstreamTimeout,
+    Upstream(String),
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, code, message) = match self {
+            Self::InvalidRequest(message) => (StatusCode::BAD_REQUEST, "invalid_request", message),
+            Self::StopNotFound(stop) => (
+                StatusCode::NOT_FOUND,
+                "stop_not_found",
+                format!("Stop {stop} not found"),
+            ),
+            Self::UpstreamTimeout => (
+                StatusCode::GATEWAY_TIMEOUT,
+                "upstream_timeout",
+                "The upstream service did not answer in time".to_owned(),
+            ),
+            Self::Upstream(message) => (StatusCode::BAD_GATEWAY, "upstream_error", message),
+        };
+        let body = json!({ "error": { "code": code, "message": message } });
+        (status, Json(body)).into_response()
+    }
+}
+
+impl From<Arc<DeparturesError>> for ApiError {
+    fn from(err: Arc<DeparturesError>) -> Self {
+        match &*err {
+            DeparturesError::StopNotFound(stop) => Self::StopNotFound(stop.clone()),
+            DeparturesError::Upstream(err) => {
+                tracing::warn!("{err}");
+                match err {
+                    UpstreamError::Timeout => Self::UpstreamTimeout,
+                    err => Self::Upstream(err.to_string()),
+                }
+            }
+        }
+    }
+}

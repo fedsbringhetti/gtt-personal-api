@@ -1,10 +1,16 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Duration};
 
 const DEFAULT_BIND_ADDR: &str = "0.0.0.0:8080";
+const DEFAULT_UPSTREAM_URL: &str = "https://plan.muoversiatorino.it/otp/routers/mato/index/graphql";
+const DEFAULT_UPSTREAM_TIMEOUT_SECS: &str = "10";
+const DEFAULT_DEPARTURES_CACHE_SECS: &str = "20";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub bind_addr: SocketAddr,
+    pub upstream_url: reqwest::Url,
+    pub upstream_timeout: Duration,
+    pub departures_cache_ttl: Duration,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -25,8 +31,20 @@ impl Config {
 
     /// Reads the configuration through `lookup`, so tests do not touch the real environment.
     pub fn from_lookup(lookup: impl Fn(&str) -> Option<String>) -> Result<Self, ConfigError> {
-        let bind_addr = parse_or_default(&lookup, "BIND_ADDR", DEFAULT_BIND_ADDR)?;
-        Ok(Self { bind_addr })
+        Ok(Self {
+            bind_addr: parse_or_default(&lookup, "BIND_ADDR", DEFAULT_BIND_ADDR)?,
+            upstream_url: parse_or_default(&lookup, "UPSTREAM_URL", DEFAULT_UPSTREAM_URL)?,
+            upstream_timeout: Duration::from_secs(parse_or_default(
+                &lookup,
+                "UPSTREAM_TIMEOUT_SECS",
+                DEFAULT_UPSTREAM_TIMEOUT_SECS,
+            )?),
+            departures_cache_ttl: Duration::from_secs(parse_or_default(
+                &lookup,
+                "DEPARTURES_CACHE_SECS",
+                DEFAULT_DEPARTURES_CACHE_SECS,
+            )?),
+        })
     }
 }
 
@@ -64,6 +82,45 @@ mod tests {
     fn uses_defaults_when_nothing_is_set() {
         let config = config_from(&[]).unwrap();
         assert_eq!(config.bind_addr, "0.0.0.0:8080".parse().unwrap());
+        assert_eq!(config.upstream_url.as_str(), DEFAULT_UPSTREAM_URL);
+        assert_eq!(config.upstream_timeout, Duration::from_secs(10));
+        assert_eq!(config.departures_cache_ttl, Duration::from_secs(20));
+    }
+
+    #[test]
+    fn reads_upstream_settings() {
+        let config = config_from(&[
+            ("UPSTREAM_URL", "http://localhost:9999/graphql"),
+            ("UPSTREAM_TIMEOUT_SECS", "3"),
+            ("DEPARTURES_CACHE_SECS", "45"),
+        ])
+        .unwrap();
+        assert_eq!(
+            config.upstream_url.as_str(),
+            "http://localhost:9999/graphql"
+        );
+        assert_eq!(config.upstream_timeout, Duration::from_secs(3));
+        assert_eq!(config.departures_cache_ttl, Duration::from_secs(45));
+    }
+
+    #[test]
+    fn rejects_invalid_numbers_and_urls() {
+        let err = config_from(&[("UPSTREAM_TIMEOUT_SECS", "ten")]).unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::Invalid {
+                var: "UPSTREAM_TIMEOUT_SECS",
+                ..
+            }
+        ));
+        let err = config_from(&[("UPSTREAM_URL", "not a url")]).unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::Invalid {
+                var: "UPSTREAM_URL",
+                ..
+            }
+        ));
     }
 
     #[test]

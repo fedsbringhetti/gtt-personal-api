@@ -13,13 +13,26 @@ cargo run
 
 ```bash
 curl http://localhost:8080/health
+curl 'http://localhost:8080/api/stops/39/departures?lines=4,15&minutes=30'
 ```
+
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | liveness check |
+| GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures; `{stop}` is a GTT code (`39`) or a full gtfsId (`gtt:39`); `minutes` 1–120 (default 60), `limit` 1–100 (default 20) |
+
+Errors use the format `{"error": {"code": "...", "message": "..."}}`. See [docs/phase-1.md](docs/phase-1.md) for details.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `BIND_ADDR` | `0.0.0.0:8080` | listen address |
+| `UPSTREAM_URL` | muoversiatorino GraphQL endpoint | upstream API |
+| `UPSTREAM_TIMEOUT_SECS` | `10` | upstream call timeout |
+| `DEPARTURES_CACHE_SECS` | `20` | departures cache lifetime |
 | `RUST_LOG` | `info` | log level |
 
 ## Checks

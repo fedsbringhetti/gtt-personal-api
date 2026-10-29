@@ -207,7 +207,7 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 | GET | `/api/stops?q=&feeds=&limit=` | search by name or code |
 | GET | `/api/stops/nearby?lat=&lon=&radius=&limit=` | nearby stops (default radius 300 m) |
 | GET | `/api/stops/{stop}` | stop details with lines |
-| GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures (default 60 minutes) |
+| GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures (`minutes` 1–120, default 60; `limit` 1–100, default 20) |
 | GET | `/api/favorites` | list favorites |
 | POST | `/api/favorites` | add a favorite |
 | PATCH | `/api/favorites/{id}` | change label, lines or position |
@@ -231,8 +231,9 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
       "expected": "2026-10-29T16:11:29+01:00",
       "delay_seconds": 749,
       "realtime": true,
-      "minutes": 0,
-      "trip_id": "gtt:28459640U"
+      "canceled": false,
+      "trip_id": "gtt:28459640U",
+      "minutes": 0
     }
   ]
 }
