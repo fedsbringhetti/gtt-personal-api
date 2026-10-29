@@ -1,6 +1,12 @@
-use std::process::ExitCode;
+use std::{process::ExitCode, sync::Arc};
 
-use gtt_personal_api::{api, config::Config};
+use gtt_personal_api::{
+    api::{self, AppState},
+    config::Config,
+    departures::DeparturesService,
+    time::SystemClock,
+    upstream::UpstreamClient,
+};
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 
@@ -18,6 +24,21 @@ async fn main() -> ExitCode {
         }
     };
 
+    let upstream = match UpstreamClient::new(config.upstream_url.clone(), config.upstream_timeout) {
+        Ok(upstream) => upstream,
+        Err(err) => {
+            tracing::error!("cannot create the upstream client: {err}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let state = AppState {
+        departures: Arc::new(DeparturesService::new(
+            upstream,
+            config.departures_cache_ttl,
+        )),
+        clock: Arc::new(SystemClock),
+    };
+
     let listener = match TcpListener::bind(config.bind_addr).await {
         Ok(listener) => listener,
         Err(err) => {
@@ -27,7 +48,7 @@ async fn main() -> ExitCode {
     };
     tracing::info!("listening on {}", config.bind_addr);
 
-    if let Err(err) = axum::serve(listener, api::router())
+    if let Err(err) = axum::serve(listener, api::router(state))
         .with_graceful_shutdown(shutdown_signal())
         .await
     {
