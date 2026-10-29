@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 use axum::{
     Router,
     body::Body,
-    http::{Method, Request, StatusCode, header},
+    http::{HeaderMap, Method, Request, StatusCode, header},
 };
 use chrono::{DateTime, Utc};
 use gtt_personal_api::{
@@ -15,7 +15,7 @@ use gtt_personal_api::{
     departures::DeparturesService,
     favorites::FavoriteStore,
     stops::{Feeds, StopIndex, sync::sync_once},
-    time::FixedClock,
+    time::{Clock, FixedClock},
     upstream::UpstreamClient,
 };
 use http_body_util::BodyExt;
@@ -34,24 +34,53 @@ pub struct TestApp {
     pub upstream: UpstreamClient,
 }
 
+/// Settings that some tests change.
+#[derive(Debug, Clone)]
+pub struct Options {
+    pub cache_ttl: Duration,
+    pub api_token: Option<&'static str>,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            cache_ttl: Duration::from_secs(20),
+            api_token: None,
+        }
+    }
+}
+
 /// The app with an in-memory database, a fixed clock and default feeds `gtt`.
 pub async fn test_app(
     upstream_url: &str,
     now: DateTime<Utc>,
     upstream_timeout: Duration,
 ) -> TestApp {
+    test_app_with(upstream_url, now, upstream_timeout, Options::default()).await
+}
+
+pub async fn test_app_with(
+    upstream_url: &str,
+    now: DateTime<Utc>,
+    upstream_timeout: Duration,
+    options: Options,
+) -> TestApp {
     let upstream = UpstreamClient::new(upstream_url.parse().unwrap(), upstream_timeout).unwrap();
     let pool = db::connect_in_memory().await.unwrap();
     let stops = StopIndex::new(pool.clone());
+    let clock: Arc<dyn Clock> = Arc::new(FixedClock(now));
     let router = api::router(AppState {
         departures: Arc::new(DeparturesService::new(
             upstream.clone(),
-            Duration::from_secs(20),
+            options.cache_ttl,
+            clock.clone(),
         )),
         stops: stops.clone(),
         favorites: FavoriteStore::new(pool),
         default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
-        clock: Arc::new(FixedClock(now)),
+        upstream_health: upstream.health(),
+        api_token: options.api_token.map(|token| token.parse().unwrap()),
+        clock,
     });
     TestApp {
         router,
@@ -94,6 +123,19 @@ pub fn at(timestamp: i64) -> DateTime<Utc> {
 
 pub async fn get(app: &Router, uri: &str) -> (StatusCode, serde_json::Value) {
     send(app, Method::GET, uri, None).await
+}
+
+/// Sends a prepared request; returns status, headers and the body parsed as JSON.
+pub async fn request(
+    app: &Router,
+    request: Request<Body>,
+) -> (StatusCode, HeaderMap, serde_json::Value) {
+    let response = app.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json = serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+    (status, headers, json)
 }
 
 /// Sends a request with an optional JSON body; the response body is parsed as JSON

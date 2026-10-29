@@ -101,7 +101,7 @@ Everything through environment variables, with sensible defaults.
 | `DEPARTURES_CACHE_SECS` | `20` | departures cache lifetime |
 | `STOPS_SYNC_TIME` | `04:00` | nightly sync time (Europe/Rome) |
 | `DEFAULT_FEEDS` | `gtt` | feeds used in search when not specified |
-| `API_TOKEN` | empty | when set, required as `Authorization: Bearer` |
+| `API_TOKEN` | empty | when set, `/api/*` requires `Authorization: Bearer <token>`; `/health` stays open. Without it the service logs a warning at startup |
 | `RUST_LOG` | `info` | log level |
 
 ## 6. Upstream client
@@ -112,7 +112,8 @@ Everything through environment variables, with sensible defaults.
   - `AllStops`: full list with coordinates, vehicle mode and lines.
 - GraphQL variables are always passed as `variables`, never concatenated into the query string.
 - Distinct errors: upstream unreachable, timeout, non-2xx HTTP, response with `errors`, unknown stop (`stop: null`).
-- A single retry, with a short delay, for network errors; no retry for invalid queries.
+- A single retry after 300 ms for transient failures: connection errors and HTTP 502–504. No retry for timeouts (they already took the whole timeout), GraphQL errors or invalid responses.
+- Every call records its outcome; `/api/status` shows it (last success, last failure and error, consecutive failures).
 
 ## 7. Times
 
@@ -182,7 +183,7 @@ Computed locally, without calling the upstream: first a bounding-box filter on l
 - Upstream call with the requested time window and number of departures.
 - In-memory cache per stop (`moka`, 20 seconds). Concurrent requests for the same stop result in a single upstream call.
 - Filters (lines, maximum count) are applied to the cached response, so changing a filter does not trigger new calls.
-- If the upstream fails and the cache holds a response less than 2 minutes old, it is returned with `"stale": true`; otherwise an error.
+- Besides the fresh cache, the last good response per stop is kept for 2 minutes. If the upstream fails, that response is returned with `"stale": true`; otherwise an error. Every response has `fetched_at`, the time the data was received.
 
 ## 10. Favorites
 
@@ -220,7 +221,7 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 | PATCH | `/api/favorites/{id}` | change `label` (`null` clears it), `lines` or `position` |
 | DELETE | `/api/favorites/{id}` | delete a favorite → 204 |
 | GET | `/health` | the process is alive (for Docker) |
-| GET | `/api/status` | upstream status, last sync, stop count |
+| GET | `/api/status` | version, outcome of recent upstream calls, last stop sync and stop count |
 
 ### Example: departures
 
@@ -228,6 +229,7 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 {
   "stop": { "id": "gtt:39", "code": "39", "name": "PORTA NUOVA" },
   "generated_at": "2026-10-29T16:12:05+01:00",
+  "fetched_at": "2026-10-29T16:12:01+01:00",
   "stale": false,
   "departures": [
     {

@@ -7,7 +7,7 @@ use serde::Serialize;
 
 use crate::{
     stops::display_code,
-    time::{TIME_ZONE, service_time},
+    time::{Clock, TIME_ZONE, service_time},
     upstream::{UpstreamClient, UpstreamError, types},
 };
 
@@ -15,6 +15,8 @@ use crate::{
 pub const FETCH_WINDOW: Duration = Duration::from_secs(2 * 60 * 60);
 const FETCH_MAX_DEPARTURES: u32 = 200;
 const CACHE_CAPACITY: u64 = 1_000;
+/// How long the last good response for a stop can stand in when the upstream fails.
+const STALE_MAX_AGE: Duration = Duration::from_secs(2 * 60);
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StopRef {
@@ -40,6 +42,8 @@ pub struct Departure {
 #[derive(Debug)]
 pub struct StopDepartures {
     pub stop: StopRef,
+    /// When the data was received from the upstream.
+    pub fetched_at: DateTime<Utc>,
     /// Sorted by expected time.
     pub departures: Vec<Departure>,
 }
@@ -53,7 +57,7 @@ pub struct Filter {
 }
 
 impl StopDepartures {
-    pub fn from_upstream(stop: types::Stop) -> Self {
+    pub fn from_upstream(stop: types::Stop, fetched_at: DateTime<Utc>) -> Self {
         let code = display_code(stop.code, &stop.gtfs_id);
         let mut departures: Vec<_> = stop
             .stoptimes_without_patterns
@@ -68,6 +72,7 @@ impl StopDepartures {
                 code,
                 name: stop.name,
             },
+            fetched_at,
             departures,
         }
     }
@@ -115,33 +120,74 @@ pub enum DeparturesError {
     Upstream(#[from] UpstreamError),
 }
 
+/// Departures as served to a request.
+#[derive(Debug, Clone)]
+pub struct Fetched {
+    pub data: Arc<StopDepartures>,
+    /// The upstream failed and `data` is the last good response, at most `STALE_MAX_AGE` old.
+    pub stale: bool,
+}
+
 pub struct DeparturesService {
     upstream: UpstreamClient,
+    clock: Arc<dyn Clock>,
+    /// Fresh responses, reused for `cache_ttl`.
     cache: Cache<String, Arc<StopDepartures>>,
+    /// Last good response per stop, used only when the upstream fails.
+    last_good: Cache<String, Arc<StopDepartures>>,
 }
 
 impl DeparturesService {
-    pub fn new(upstream: UpstreamClient, cache_ttl: Duration) -> Self {
+    pub fn new(upstream: UpstreamClient, cache_ttl: Duration, clock: Arc<dyn Clock>) -> Self {
         let cache = Cache::builder()
             .max_capacity(CACHE_CAPACITY)
             .time_to_live(cache_ttl)
             .build();
-        Self { upstream, cache }
+        let last_good = Cache::builder()
+            .max_capacity(CACHE_CAPACITY)
+            .time_to_live(STALE_MAX_AGE)
+            .build();
+        Self {
+            upstream,
+            clock,
+            cache,
+            last_good,
+        }
     }
 
     /// Departures for a stop, from the cache when fresh. Concurrent requests for the same stop
-    /// share a single upstream call; errors are not cached.
-    pub async fn get(&self, stop_id: &str) -> Result<Arc<StopDepartures>, Arc<DeparturesError>> {
-        self.cache
+    /// share a single upstream call; errors are not cached. When the upstream fails, the last
+    /// good response is returned as stale if it is recent enough.
+    pub async fn get(&self, stop_id: &str) -> Result<Fetched, Arc<DeparturesError>> {
+        let result = self
+            .cache
             .try_get_with(stop_id.to_owned(), async {
                 let stop = self
                     .upstream
                     .stop_departures(stop_id, FETCH_WINDOW, FETCH_MAX_DEPARTURES)
                     .await?
                     .ok_or_else(|| DeparturesError::StopNotFound(stop_id.to_owned()))?;
-                Ok::<_, DeparturesError>(Arc::new(StopDepartures::from_upstream(stop)))
+                let data = Arc::new(StopDepartures::from_upstream(stop, self.clock.now()));
+                self.last_good
+                    .insert(stop_id.to_owned(), data.clone())
+                    .await;
+                Ok::<_, DeparturesError>(data)
             })
-            .await
+            .await;
+
+        match result {
+            Ok(data) => Ok(Fetched { data, stale: false }),
+            Err(err) if matches!(*err, DeparturesError::Upstream(_)) => {
+                match self.last_good.get(stop_id).await {
+                    Some(data) => {
+                        tracing::warn!("serving stale departures for {stop_id}: {err}");
+                        Ok(Fetched { data, stale: true })
+                    }
+                    None => Err(err),
+                }
+            }
+            Err(err) => Err(err),
+        }
     }
 }
 
@@ -176,7 +222,7 @@ mod tests {
             "stoptimesWithoutPatterns": stoptimes,
         }))
         .unwrap();
-        StopDepartures::from_upstream(stop)
+        StopDepartures::from_upstream(stop, at(8, 0))
     }
 
     fn at(hours: i64, minutes: i64) -> DateTime<Utc> {

@@ -23,7 +23,8 @@ On first start the service downloads all stops (about 19,000, a few seconds) int
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/health` | liveness check |
+| GET | `/health` | liveness check (never requires the token) |
+| GET | `/api/status` | upstream health, last stop sync, stop count |
 | GET | `/api/stops?q=&feeds=&limit=` | search stops by name or code; `feeds` is `all` or a list such as `gtt,2` |
 | GET | `/api/stops/nearby?lat=&lon=&radius=&feeds=&limit=` | stops near a point, nearest first; `radius` 1–2000 m (default 300) |
 | GET | `/api/stops/{stop}` | stop details with the lines serving it |
@@ -31,7 +32,9 @@ On first start the service downloads all stops (about 19,000, a few seconds) int
 | POST | `/api/favorites` | add a favorite: `{"stop": "39", "label": "Home", "lines": ["4", "15"]}` |
 | PATCH | `/api/favorites/{id}` | change `label` (`null` clears it), `lines` or `position` |
 | DELETE | `/api/favorites/{id}` | delete a favorite |
-| GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures; `{stop}` is a GTT code (`39`) or a full gtfsId (`gtt:39`); `minutes` 1–120 (default 60), `limit` 1–100 (default 20) |
+| GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures; `{stop}` is a GTT code (`39`) or a full gtfsId (`gtt:39`); `minutes` 1–120 (default 60), `limit` 1–100 (default 20). If the upstream fails, the last good data (up to 2 minutes old) comes back with `"stale": true` |
+
+When `API_TOKEN` is set, every `/api/*` request needs `Authorization: Bearer <token>` (`/health` stays open). Generate one with `openssl rand -hex 32`.
 
 Errors use the format `{"error": {"code": "...", "message": "..."}}`. See [docs/phase-1.md](docs/phase-1.md) for details.
 
@@ -46,6 +49,7 @@ Errors use the format `{"error": {"code": "...", "message": "..."}}`. See [docs/
 | `DATA_DIR` | `data` | directory of the SQLite database |
 | `STOPS_SYNC_TIME` | `04:00` | nightly stop index sync, Europe/Rome time |
 | `DEFAULT_FEEDS` | `gtt` | feeds searched when a request does not say: `all` or a list such as `gtt,2` |
+| `API_TOKEN` | empty | bearer token required by `/api/*` when set |
 | `RUST_LOG` | `info` | log level |
 
 ## Checks
