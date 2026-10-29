@@ -3,8 +3,10 @@ use std::{process::ExitCode, sync::Arc};
 use gtt_personal_api::{
     api::{self, AppState},
     config::Config,
+    db,
     departures::DeparturesService,
-    time::SystemClock,
+    stops::{StopIndex, sync},
+    time::{Clock, SystemClock},
     upstream::UpstreamClient,
 };
 use tokio::net::TcpListener;
@@ -31,12 +33,33 @@ async fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    let pool = match db::connect(&config.data_dir).await {
+        Ok(pool) => pool,
+        Err(err) => {
+            tracing::error!(
+                "cannot open the database in {}: {err}",
+                config.data_dir.display()
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+    let clock: Arc<dyn Clock> = Arc::new(SystemClock);
+    let stops = StopIndex::new(pool);
+    sync::spawn(
+        stops.clone(),
+        upstream.clone(),
+        clock.clone(),
+        config.stops_sync_time,
+    );
+
     let state = AppState {
         departures: Arc::new(DeparturesService::new(
             upstream,
             config.departures_cache_ttl,
         )),
-        clock: Arc::new(SystemClock),
+        stops,
+        default_feeds: config.default_feeds.clone(),
+        clock,
     };
 
     let listener = match TcpListener::bind(config.bind_addr).await {

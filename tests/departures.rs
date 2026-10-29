@@ -26,7 +26,7 @@ async fn upstream_with_stop_39() -> MockServer {
 #[tokio::test]
 async fn returns_departures_for_a_stop() {
     let server = upstream_with_stop_39().await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE - 30), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE - 30), TIMEOUT).await;
 
     let (status, json) = get(&app, "/api/stops/39/departures").await;
 
@@ -76,7 +76,7 @@ async fn sends_the_full_stop_id_as_a_graphql_variable() {
 
     // Two separate apps, so the second request is not served from the cache.
     for uri in ["/api/stops/39/departures", "/api/stops/gtt:39/departures"] {
-        let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+        let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
         let (status, _) = get(&app, uri).await;
         assert_eq!(status, StatusCode::OK, "{uri}");
     }
@@ -85,7 +85,7 @@ async fn sends_the_full_stop_id_as_a_graphql_variable() {
 #[tokio::test]
 async fn filters_by_lines_window_and_limit() {
     let server = upstream_with_stop_39().await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     let (_, json) = get(&app, "/api/stops/39/departures?lines=4,%2067&limit=100").await;
     let departures = json["departures"].as_array().unwrap();
@@ -117,7 +117,7 @@ async fn caches_upstream_responses() {
         .expect(1)
         .mount(&server)
         .await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     for uri in [
         "/api/stops/39/departures",
@@ -136,7 +136,7 @@ async fn unknown_stop_returns_404() {
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "data": { "stop": null } })))
         .mount(&server)
         .await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     let (status, json) = get(&app, "/api/stops/99999/departures").await;
 
@@ -154,7 +154,7 @@ async fn graphql_error_returns_502() {
         })))
         .mount(&server)
         .await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     let (status, json) = get(&app, "/api/stops/39/departures").await;
 
@@ -175,7 +175,7 @@ async fn http_error_without_body_returns_502() {
         .respond_with(ResponseTemplate::new(503))
         .mount(&server)
         .await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     let (status, json) = get(&app, "/api/stops/39/departures").await;
 
@@ -198,7 +198,8 @@ async fn slow_upstream_returns_504() {
         &server.uri(),
         at(STOP_39_FIRST_DEPARTURE),
         Duration::from_millis(200),
-    );
+    )
+    .await;
 
     let (status, json) = get(&app, "/api/stops/39/departures").await;
 
@@ -214,7 +215,7 @@ async fn invalid_requests_return_400_without_calling_upstream() {
         .expect(0)
         .mount(&server)
         .await;
-    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT);
+    let app = common::app(&server.uri(), at(STOP_39_FIRST_DEPARTURE), TIMEOUT).await;
 
     for uri in [
         "/api/stops/39/departures?minutes=abc",

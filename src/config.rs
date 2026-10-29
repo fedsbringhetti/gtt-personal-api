@@ -1,9 +1,16 @@
-use std::{net::SocketAddr, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
+
+use chrono::NaiveTime;
+
+use crate::stops::Feeds;
 
 const DEFAULT_BIND_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_UPSTREAM_URL: &str = "https://plan.muoversiatorino.it/otp/routers/mato/index/graphql";
 const DEFAULT_UPSTREAM_TIMEOUT_SECS: &str = "10";
 const DEFAULT_DEPARTURES_CACHE_SECS: &str = "20";
+const DEFAULT_DATA_DIR: &str = "data";
+const DEFAULT_STOPS_SYNC_TIME: &str = "04:00";
+const DEFAULT_FEEDS: &str = "gtt";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -11,6 +18,11 @@ pub struct Config {
     pub upstream_url: reqwest::Url,
     pub upstream_timeout: Duration,
     pub departures_cache_ttl: Duration,
+    pub data_dir: PathBuf,
+    /// Local time (Europe/Rome) of the nightly stop index sync.
+    pub stops_sync_time: NaiveTime,
+    /// Feeds searched when a request does not specify any.
+    pub default_feeds: Feeds,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -44,6 +56,14 @@ impl Config {
                 "DEPARTURES_CACHE_SECS",
                 DEFAULT_DEPARTURES_CACHE_SECS,
             )?),
+            data_dir: parse_or_default(&lookup, "DATA_DIR", DEFAULT_DATA_DIR)?,
+            stops_sync_time: parse_with(
+                &lookup,
+                "STOPS_SYNC_TIME",
+                DEFAULT_STOPS_SYNC_TIME,
+                |value| NaiveTime::parse_from_str(value, "%H:%M").map_err(|err| err.to_string()),
+            )?,
+            default_feeds: parse_or_default(&lookup, "DEFAULT_FEEDS", DEFAULT_FEEDS)?,
         })
     }
 }
@@ -57,12 +77,19 @@ where
     T: std::str::FromStr,
     T::Err: std::fmt::Display,
 {
-    let value = lookup(var).unwrap_or_else(|| default.to_owned());
-    value.parse().map_err(|err: T::Err| ConfigError::Invalid {
-        var,
-        reason: err.to_string(),
-        value,
+    parse_with(lookup, var, default, |value| {
+        value.parse().map_err(|err: T::Err| err.to_string())
     })
+}
+
+fn parse_with<T>(
+    lookup: &impl Fn(&str) -> Option<String>,
+    var: &'static str,
+    default: &str,
+    parse: impl Fn(&str) -> Result<T, String>,
+) -> Result<T, ConfigError> {
+    let value = lookup(var).unwrap_or_else(|| default.to_owned());
+    parse(&value).map_err(|reason| ConfigError::Invalid { var, value, reason })
 }
 
 #[cfg(test)]
@@ -85,6 +112,39 @@ mod tests {
         assert_eq!(config.upstream_url.as_str(), DEFAULT_UPSTREAM_URL);
         assert_eq!(config.upstream_timeout, Duration::from_secs(10));
         assert_eq!(config.departures_cache_ttl, Duration::from_secs(20));
+        assert_eq!(config.data_dir, PathBuf::from("data"));
+        assert_eq!(
+            config.stops_sync_time,
+            NaiveTime::from_hms_opt(4, 0, 0).unwrap()
+        );
+        assert_eq!(config.default_feeds, Feeds::Only(vec!["gtt".to_owned()]));
+    }
+
+    #[test]
+    fn reads_stop_index_settings() {
+        let config = config_from(&[
+            ("DATA_DIR", "/data"),
+            ("STOPS_SYNC_TIME", "03:30"),
+            ("DEFAULT_FEEDS", "all"),
+        ])
+        .unwrap();
+        assert_eq!(config.data_dir, PathBuf::from("/data"));
+        assert_eq!(
+            config.stops_sync_time,
+            NaiveTime::from_hms_opt(3, 30, 0).unwrap()
+        );
+        assert_eq!(config.default_feeds, Feeds::All);
+    }
+
+    #[test]
+    fn rejects_invalid_sync_time_and_feeds() {
+        for (var, value) in [("STOPS_SYNC_TIME", "4am"), ("DEFAULT_FEEDS", "gtt;drop")] {
+            let err = config_from(&[(var, value)]).unwrap_err();
+            assert!(
+                matches!(err, ConfigError::Invalid { var: v, .. } if v == var),
+                "{var}"
+            );
+        }
     }
 
     #[test]

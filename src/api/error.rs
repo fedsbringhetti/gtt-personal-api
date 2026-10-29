@@ -7,7 +7,7 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::{departures::DeparturesError, upstream::UpstreamError};
+use crate::{departures::DeparturesError, stops::IndexError, upstream::UpstreamError};
 
 /// Errors returned to API clients as `{"error": {"code": ..., "message": ...}}`.
 #[derive(Debug)]
@@ -16,6 +16,9 @@ pub enum ApiError {
     StopNotFound(String),
     UpstreamTimeout,
     Upstream(String),
+    /// The stop index has not been synced yet.
+    IndexNotReady,
+    Internal,
 }
 
 impl IntoResponse for ApiError {
@@ -33,6 +36,16 @@ impl IntoResponse for ApiError {
                 "The upstream service did not answer in time".to_owned(),
             ),
             Self::Upstream(message) => (StatusCode::BAD_GATEWAY, "upstream_error", message),
+            Self::IndexNotReady => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "index_not_ready",
+                "The stop index is still being downloaded, try again shortly".to_owned(),
+            ),
+            Self::Internal => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                "Internal error".to_owned(),
+            ),
         };
         let body = json!({ "error": { "code": code, "message": message } });
         (status, Json(body)).into_response()
@@ -51,5 +64,12 @@ impl From<Arc<DeparturesError>> for ApiError {
                 }
             }
         }
+    }
+}
+
+impl From<IndexError> for ApiError {
+    fn from(err: IndexError) -> Self {
+        tracing::error!("stop index: {err}");
+        Self::Internal
     }
 }

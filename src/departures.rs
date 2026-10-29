@@ -6,6 +6,7 @@ use moka::future::Cache;
 use serde::Serialize;
 
 use crate::{
+    stops::display_code,
     time::{TIME_ZONE, service_time},
     upstream::{UpstreamClient, UpstreamError, types},
 };
@@ -53,10 +54,7 @@ pub struct Filter {
 
 impl StopDepartures {
     pub fn from_upstream(stop: types::Stop) -> Self {
-        let code = match stop.code {
-            Some(code) if !code.is_empty() => code,
-            _ => code_from_id(&stop.gtfs_id).to_owned(),
-        };
+        let code = display_code(stop.code, &stop.gtfs_id);
         let mut departures: Vec<_> = stop
             .stoptimes_without_patterns
             .into_iter()
@@ -107,11 +105,6 @@ impl Departure {
             trip_id: stoptime.trip.gtfs_id,
         })
     }
-}
-
-/// `gtt:8224` → `8224`.
-fn code_from_id(id: &str) -> &str {
-    id.split_once(':').map_or(id, |(_, code)| code)
 }
 
 #[derive(Debug, thiserror::Error)]

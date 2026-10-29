@@ -8,6 +8,9 @@ use serde_json::json;
 mod queries;
 pub mod types;
 
+/// The full stop list is large and slow to generate; it gets its own timeout.
+const ALL_STOPS_TIMEOUT: Duration = Duration::from_secs(60);
+
 #[derive(Debug, thiserror::Error)]
 pub enum UpstreamError {
     #[error("upstream timed out")]
@@ -84,18 +87,37 @@ impl UpstreamClient {
         Ok(data.stop)
     }
 
+    /// Every stop of every feed, with the lines serving it (about 19,000 stops, 5 MB).
+    pub async fn all_stops(&self) -> Result<Vec<types::IndexStop>, UpstreamError> {
+        let data: types::AllStopsData = self
+            .query_with_timeout(queries::ALL_STOPS, json!({}), Some(ALL_STOPS_TIMEOUT))
+            .await?;
+        Ok(data.stops)
+    }
+
     async fn query<T: DeserializeOwned>(
         &self,
         query: &str,
         variables: serde_json::Value,
     ) -> Result<T, UpstreamError> {
-        let response = self
+        self.query_with_timeout(query, variables, None).await
+    }
+
+    /// `timeout` overrides the client timeout for this request.
+    async fn query_with_timeout<T: DeserializeOwned>(
+        &self,
+        query: &str,
+        variables: serde_json::Value,
+        timeout: Option<Duration>,
+    ) -> Result<T, UpstreamError> {
+        let mut request = self
             .http
             .post(self.url.clone())
-            .json(&json!({ "query": query, "variables": variables }))
-            .send()
-            .await
-            .map_err(UpstreamError::from_reqwest)?;
+            .json(&json!({ "query": query, "variables": variables }));
+        if let Some(timeout) = timeout {
+            request = request.timeout(timeout);
+        }
+        let response = request.send().await.map_err(UpstreamError::from_reqwest)?;
         let status = response.status();
         let body = response
             .bytes()
