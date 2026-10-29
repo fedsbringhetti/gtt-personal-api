@@ -6,6 +6,7 @@ Personal service for real-time GTT public transport departures in Turin: Rust ba
 
 - [PLAN.md](PLAN.md): project phases, cross-cutting decisions, workflow.
 - [docs/phase-1.md](docs/phase-1.md): detailed plan for Phase 1 (core backend).
+- [docs/guide.md](docs/guide.md): how the service works and how to use it; keep it up to date when behavior changes.
 
 Decisions already made are recorded in these files: follow them, and when a choice is not covered, ask instead of deciding alone.
 

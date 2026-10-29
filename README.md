@@ -3,7 +3,9 @@
 Personal service for real-time GTT public transport departures in Turin, meant to run in Docker on an Orange Pi 5.
 Inspired by [madbob/gtt-pirate-api](https://github.com/madbob/gtt-pirate-api).
 
-See [PLAN.md](PLAN.md) for phases and decisions.
+- [docs/guide.md](docs/guide.md): what the service does, how to use the API, how the code works.
+- [docs/deploy.md](docs/deploy.md): Docker image and deployment on the home server.
+- [PLAN.md](PLAN.md): phases and decisions.
 
 ## Running with Docker
 
