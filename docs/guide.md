@@ -28,7 +28,7 @@ It is a single Rust binary with an SQLite database, built as a Docker image for 
 |-------|-----|
 | Locally, from source | `cargo run`, then `http://localhost:8080`. Data goes to `./data` |
 | Locally, with Docker | build the image (`scripts/build-image.sh`), `cp .env.example .env`, `docker compose up -d`, then `http://localhost:8100` |
-| Home server | follow [deploy.md](deploy.md); then `http://192.168.1.13:8100` |
+| Home server | not deployed yet, planned with the user interface (Phase 3); steps in [deploy.md](deploy.md) |
 
 On first start the service downloads all stops (2–3 seconds). Until then the stop endpoints answer `503 index_not_ready`.
 
@@ -313,7 +313,7 @@ The same checks run in GitHub Actions on every PR and on `main`.
 ### Workflow and release
 
 - Work in a short branch from `main` (`feat/...`, `fix/...`, `docs/...`), open a PR, merge when CI passes. Everything in the repository is in English.
-- Release: bump `version` in `Cargo.toml`, tag `vX.Y.Z` on `main`, run `scripts/build-image.sh --push`, then update the image tag on the server ([deploy.md](deploy.md)).
+- Release: bump `version` in `Cargo.toml` and tag `vX.Y.Z` on `main`. Once the service is deployed (planned with Phase 3), also run `scripts/build-image.sh --push` and update the image tag on the server ([deploy.md](deploy.md)).
 
 ## 8. Known limitations
 

@@ -4,19 +4,20 @@ Status: **approved**, decisions confirmed on 2026-10-29. Development not started
 
 ## 1. Goal
 
-An HTTP API, running in Docker on the Orange Pi 5, that can:
+An HTTP API, packaged as a Docker image for the Orange Pi 5, that can:
 - search for a stop by name, by code, or by location;
 - show the next departures from a stop, filtered by line;
 - store favorite stops.
 
 ### Definition of done
 
-- [ ] Searching `porta nuova` returns GTT stops 39, 40 and 253 among the first results.
-- [ ] Searching `39` returns stop 39 as the first result.
-- [ ] Departures for stop 39 match those shown on muoversiatorino.it.
-- [ ] Times stay correct after midnight and across daylight saving changes (covered by tests).
-- [ ] If the upstream is down, stop search still works and departures return a clear error.
-- [ ] The container runs on the Orange Pi, survives a restart without losing data, and uses less than 50 MB of RAM at idle.
+- [x] Searching `porta nuova` returns GTT stops 39, 40 and 253 among the first results.
+- [x] Searching `39` returns stop 39 as the first result.
+- [x] Departures for stop 39 match those shown on muoversiatorino.it.
+- [x] Times stay correct after midnight and across daylight saving changes (covered by tests).
+- [x] If the upstream is down, stop search still works and departures return a clear error (or stale data up to 2 minutes old).
+- [x] The container survives a restart without losing data and uses less than 50 MB of RAM at idle (32 MB measured, arm64 under Docker on the Mac).
+- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned with Phase 3.
 
 ## 2. Decisions
 
@@ -294,7 +295,7 @@ Each step ends with something verifiable and is developed in its own branch with
 3. **Stop index**: migrations, sync, normalization, search, nearby stops, details. Check: the search criteria in section 1.
 4. **Favorites**: table and endpoints.
 5. **Robustness**: `stale` responses, retry, `/api/status`, optional token.
-6. **Docker and deployment**: arm64 image, compose, start on the Orange Pi. Check: all criteria in section 1 on the Pi.
+6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 3.
 
 ## 15. Out of scope for this phase
 

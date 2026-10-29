@@ -19,7 +19,7 @@ Receive the departures I need on my phone, automatically:
 - [ ] The Telegram bot ignores messages from any chat other than mine.
 - [ ] If the upstream is down for 5 minutes I get one alert, and one message when it recovers.
 - [ ] Scheduling is correct across daylight saving changes (covered by tests with a fake clock).
-- [ ] Idle memory stays under 60 MB on the Orange Pi.
+- [ ] Idle memory stays under 60 MB in the container.
 
 ## 2. Decisions to confirm
 

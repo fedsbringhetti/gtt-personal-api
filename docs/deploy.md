@@ -1,5 +1,7 @@
 # Deployment on the home server
 
+> **Not deployed yet.** Until there is a user interface (Phase 3) the image is only used for local testing: build it with `scripts/build-image.sh` (no `--push`), `cp .env.example .env`, `docker compose up -d`, then `http://localhost:8100`. The steps below are for the first real deployment.
+
 The service runs as a single container on the home server (Orange Pi 5, ARM64, Debian 12, Docker 29, Compose v5). The image is built on the Mac for `linux/arm64` (native on Apple Silicon), pushed to Docker Hub as a public image, and pulled by the server.
 
 ## Summary

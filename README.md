@@ -9,7 +9,15 @@ Inspired by [madbob/gtt-pirate-api](https://github.com/madbob/gtt-pirate-api).
 
 ## Running with Docker
 
-See [docs/deploy.md](docs/deploy.md) for building the arm64 image, pushing it to Docker Hub and running it on the home server with `docker-compose.yml` (host port 8100). Copy `.env.example` to `.env` for the settings.
+For now the image is used for local testing (the home server deployment is planned with the user interface, Phase 3):
+
+```bash
+scripts/build-image.sh
+cp .env.example .env
+docker compose up -d
+```
+
+The service is then on `http://localhost:8100`. See [docs/deploy.md](docs/deploy.md) for publishing the image to Docker Hub and deploying it on the home server.
 
 ## Running locally
 
