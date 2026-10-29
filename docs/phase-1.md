@@ -191,13 +191,17 @@ CREATE TABLE favorites (
   id         INTEGER PRIMARY KEY,
   stop_id    TEXT NOT NULL,       -- gtfsId; no foreign key, the stop may disappear after a sync
   label      TEXT,                -- e.g. "Home → work"
-  lines      TEXT,                -- JSON, optional line filter
-  position   INTEGER NOT NULL,    -- manual ordering
+  lines      TEXT NOT NULL,       -- JSON array of line names; empty means all lines
+  position   INTEGER NOT NULL,    -- 0-based manual order, kept contiguous
   created_at TEXT NOT NULL
 );
 ```
 
-If a favorite stop no longer exists in the index, the response flags it with `"missing": true` instead of hiding it.
+- New favorites go to the end. Moving one shifts the others; deleting one closes the gap.
+- Creating a favorite requires a synced index and a stop that exists in it (`404 stop_not_found` otherwise), so typos do not create dead favorites.
+- Each favorite in a response carries its `stop` details. If the stop no longer exists after a sync, `stop` is `null` and `"missing": true`, instead of hiding the favorite.
+- Labels are trimmed (at most 100 characters, empty means none); lines are trimmed and deduplicated (at most 20, each at most 10 characters).
+- Request bodies reject unknown fields.
 
 ## 11. API
 
@@ -211,10 +215,10 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 | GET | `/api/stops/nearby?lat=&lon=&radius=&feeds=&limit=` | nearby stops with `distance_m` (radius 1–2000 m, default 300 m) |
 | GET | `/api/stops/{stop}` | stop details with lines |
 | GET | `/api/stops/{stop}/departures?lines=&minutes=&limit=` | next departures (`minutes` 1–120, default 60; `limit` 1–100, default 20) |
-| GET | `/api/favorites` | list favorites |
-| POST | `/api/favorites` | add a favorite |
-| PATCH | `/api/favorites/{id}` | change label, lines or position |
-| DELETE | `/api/favorites/{id}` | delete a favorite |
+| GET | `/api/favorites` | list favorites in order, with stop details |
+| POST | `/api/favorites` | add a favorite: `{"stop": "39", "label": "...", "lines": ["4"]}` → 201 |
+| PATCH | `/api/favorites/{id}` | change `label` (`null` clears it), `lines` or `position` |
+| DELETE | `/api/favorites/{id}` | delete a favorite → 204 |
 | GET | `/health` | the process is alive (for Docker) |
 | GET | `/api/status` | upstream status, last sync, stop count |
 
@@ -255,6 +259,7 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 | Unknown stop | 404 | `stop_not_found` |
 | Upstream error | 502 | `upstream_error` |
 | Upstream timeout | 504 | `upstream_timeout` |
+| Unknown favorite | 404 | `favorite_not_found` |
 | Stop index not synced yet | 503 | `index_not_ready` |
 | Database error | 500 | `internal_error` |
 
