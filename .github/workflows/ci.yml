@@ -17,6 +17,8 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Docs
+        run: python3 .claude/skills/docs-sync/scripts/check_docs.py
       - name: Format
         run: cargo fmt --check
       - name: Clippy

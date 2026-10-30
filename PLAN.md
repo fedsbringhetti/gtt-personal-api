@@ -38,7 +38,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - **Branches**: `main` always works. Every change starts from `main` in a short-lived branch (`feat/...`, `fix/...`, `docs/...`) and merges back through a PR once CI (`cargo fmt`, `cargo clippy`, `cargo test`) passes. No `dev` branch.
 - **Releases**: semantic version tags on `main` (`v0.1.0` at the end of Phase 1, `v0.2.0` at the end of Phase 2, ...). To try a version on the Pi before releasing it, use a pre-release tag (`v0.2.0-rc1`).
 - **Docker images**: built on the Mac for `linux/arm64` and pushed to Docker Hub as `federicosbringhetti/gtt-personal-api` (public), tagged with the version and `latest`.
-- **Deployment**: deferred (decided on 2026-10-29). Until there is a product worth using, with a user interface (Phase 3), the Docker image is only used for local testing. Then: on the home server in `/home/federico/gtt-personal-api/`, host port 8100, data in the `./data` bind mount. The compose file pins an exact version (e.g. `:0.1.0`), never `latest`; rolling back means changing the tag. Steps in [docs/deploy.md](docs/deploy.md).
+- **Deployment**: deferred (decided on 2026-10-29). Until there is a product worth using, with a user interface (Phase 3), the Docker image is only used for local testing. Then: on the home server in `/home/federico/gtt-personal-api/`, host port 8100, data in the `./data` bind mount. The compose file pins an exact version (e.g. `:0.1.0`), never `latest`; rolling back means changing the tag. Steps in [docs/user/deploy.md](docs/user/deploy.md).
 
 ---
 
@@ -57,7 +57,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - Health check, including upstream reachability
 - Dockerfile and `docker-compose.yml` for arm64
 
-**Detailed plan**: [docs/phase-1.md](docs/phase-1.md) (approved)
+**Detailed plan**: [docs/plan/phase-1.md](docs/plan/phase-1.md) (done; development story in [docs/development/](docs/development/README.md))
 
 ---
 
@@ -72,7 +72,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - Send a test notification for a rule
 - Alert myself when the upstream stops working
 
-**Detailed plan**: [docs/phase-2.md](docs/phase-2.md) (draft)
+**Detailed plan**: [docs/plan/phase-2.md](docs/plan/phase-2.md) (draft)
 
 ---
 
@@ -82,7 +82,7 @@ This document defines the phases. The detailed plan for each phase is written to
 
 **Features**
 - PWA installable on the phone, served by the same binary as the backend
-- First deployment on the home server, following [docs/deploy.md](docs/deploy.md)
+- First deployment on the home server, following [docs/user/deploy.md](docs/user/deploy.md)
 - Stop search by name and by location
 - Departures view with automatic refresh
 - Management of favorites and rules

@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR\"/.claude/skills/docs-sync/scripts/docs_gate.py",
+            "timeout": 30,
+            "statusMessage": "Checking that the docs match the code"
+          }
+        ]
+      }
+    ]
+  }
+}
