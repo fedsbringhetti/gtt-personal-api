@@ -1,307 +1,157 @@
-# Phase 2 — Rules and notifications: detailed plan
+# Phase 2 — Web app and first deployment: detailed plan
 
-Status: **draft to review**. Decisions in section 2 are proposals, not yet confirmed.
+Status: **approved** on 2026-10-30. Only the hostname and the Access policy (decision T) are left for the deployment step. Development not started yet.
 
-Builds on Phase 1: stop index, departures endpoint with cache, favorites.
+Builds on Phase 1: the API (stops, departures, favorites, status), the Docker image and the deployment files.
 
 ## 1. Goal
 
-Receive the departures I need on my phone, automatically:
-- a summary of the next departures at a fixed time on chosen days;
-- live tracking of a specific run I want to catch, with alerts when it is approaching, late or cancelled;
-- an alert when the upstream stops working.
+A simple, modern interface on the phone, over the existing API, running on the home server and reachable from anywhere:
+- search a stop by name or near me, see its departures update by themselves, keep favorites;
+- installable on iPhone and Android, in Italian;
+- deployed on the home server behind the existing Cloudflare Tunnel and Nginx Proxy Manager, protected by Cloudflare Access.
+
+It also lays the ground for Phase 3, whose notifications (Web Push) need an installable web app with a service worker.
 
 ### Definition of done
 
-- [ ] A Mon–Fri 7:40 summary rule sends a message within 30 seconds of 7:40, never on Saturdays, Sundays or public holidays, and never twice on the same day, even after a restart.
-- [ ] Tracking "line 4 at 8:05 from stop X" sends: an alert 10 and 5 minutes before the expected departure, an alert when the delay reaches 3 minutes, and a single alert if the run is cancelled or cannot be found.
-- [ ] A rule can be created, paused, resumed and tested through the API, and paused or skipped for today from Telegram.
-- [ ] The Telegram bot ignores messages from any chat other than mine.
-- [ ] If the upstream is down for 5 minutes I get one alert, and one message when it recovers.
-- [ ] Scheduling is correct across daylight saving changes (covered by tests with a fake clock).
-- [ ] Idle memory stays under 60 MB in the container.
+- [ ] From the phone, the web app finds a stop by name and by position, and shows its departures refreshing automatically.
+- [ ] The home screen shows the favorites with their next departures; favorites can be added, renamed, filtered by line, reordered and removed.
+- [ ] It installs on the Home Screen of an iPhone and of an Android phone and opens full screen, with its own icon.
+- [ ] Without network it still opens and shows the last loaded data, marked as old.
+- [ ] From outside home it is reachable only after the Cloudflare Access login; requests reaching port 8100 without the Access signature or `API_TOKEN` are refused; `/health` still works for Docker.
+- [ ] It runs on the Orange Pi (Phase 1 criterion carried over), survives a restart, idle memory under 60 MB.
+- [ ] The Docker image stays under 50 MB to download.
 
-## 2. Decisions to confirm
+## 2. Decisions
 
-| # | Question | Proposal |
-|---|----------|----------|
-| G | Notification channel | **Telegram bot**. It only makes outbound calls, so it works away from home without exposing the Pi; it supports buttons, commands and editing a message in place. Sending goes through a `Notifier` interface, so ntfy or Web Push can be added later |
-| H | Rule types | **Summary** and **tracking**. "Leave now" is an option of tracking (walking time to the stop), not a separate type |
-| I | Managing rules before the Phase 3 UI | REST API, plus a few Telegram commands for daily use (next departures, pause, skip today) |
-| J | Language of notification texts | Italian (user-facing text); code, identifiers and logs stay in English |
-| K | Public holidays | Rules can skip Italian national holidays plus 24 June (San Giovanni, Turin); enabled by default |
-| L | Delay history | Minimal: at the end of each tracking, store the final delay of that run. Enables "this run is usually 4 minutes late" later at almost no cost |
-| M | Missed schedule (Pi off or restarting at due time) | Send if at most 5 minutes late, otherwise skip and log it |
+| # | Topic | Decision |
+|---|-------|----------|
+| — | Order, phones, language, remote access | From `PLAN.md` (decisions 3, 7, 8, 9): web app before rules; iPhone and Android, designed for iPhone's stricter rules; Italian; Cloudflare Tunnel → Nginx Proxy Manager → host port 8100, protected by Cloudflare Access |
+| — | Serving | The same binary serves the web app and the API: one container, one origin |
+| N | Frontend technology | **Svelte** with **Vite**, compiled to static files that the Rust binary embeds. TypeScript, so API responses have types |
+| O | Look and feel | Clean, iOS-like (system font, generous spacing, rounded cards, light/dark following the phone), with a **transport character**: line badges colored by vehicle type, departure-board rows, loading indicators with a moving bus or tram. To be refined during development |
+| P | Screens | Home, search, stop, near me (list, no map), favorites, info (section 5) |
+| Q | Position | Asked only when tapping "vicino a me"; used for that search only, never stored |
+| R | Offline | The app shell opens without network; the last loaded favorites and departures stay visible with "dati delle HH:MM, sei offline"; no offline search |
+| S | Authorization | The backend accepts a request if it carries a valid **Cloudflare Access** signature (`Cf-Access-Jwt-Assertion`, checked against Cloudflare's public keys and the app's audience) **or** `API_TOKEN`. No token stored in the browser |
+| T | Hostname and Access policy | Left for the deployment step: subdomain of your domain, allowed emails, session length (proposal: 30 days) |
 
-The cross-cutting decision on remote access (#3 in `PLAN.md`) does not block this phase: Telegram works without exposing the service.
-
-## 3. What we know about the upstream
-
-Verified on 2026-10-29.
-
-- Every departure from `stop(...).stoptimesWithoutPatterns` carries a `trip.gtfsId` (e.g. `gtt:28440933U`).
-- `trip(id).stoptimes` returns **only the static timetable** (`serviceDay: 0`, `realtime: false`).
-- `trip(id).stoptimesForDate` returns **real-time** times for every stop of the run, with `serviceDay`.
-- Real-time data propagates along the whole run: a run that is late at its first stop is already shown as late at later stops.
-- There are **no vehicle positions** (`vehiclePositions` does not exist in the schema). A separate source exists (5T MQTT broker), recorded under "Future ideas" in `PLAN.md` and not used in this phase.
-
-Consequence: tracking polls the stop departures (already cached in Phase 1) and identifies the run by its `trip.gtfsId`. `trip(id).stoptimesForDate` is the fallback when the run has not yet entered the stop's departure window.
-
-## 4. Rule model
-
-### Common fields
-
-| Field | Example | Notes |
-|-------|---------|-------|
-| `name` | `"Home → work"` | |
-| `kind` | `summary` / `track` | |
-| `enabled` | `true` | |
-| `stop_id` | `gtt:39` | gtfsId |
-| `days` | `["mon","tue","wed","thu","fri"]` | days of the week |
-| `skip_holidays` | `true` | see decision K |
-| `paused_until` | `2026-11-03` | optional; used by "pause" and "skip today" |
-
-### Summary rule
-
-| Field | Example | Notes |
-|-------|---------|-------|
-| `time` | `07:40` | Europe/Rome |
-| `lines` | `["4", "15"]` | optional filter |
-| `window_minutes` | `30` | departures shown in the next N minutes |
-| `max_departures` | `6` | |
-
-### Tracking rule
-
-| Field | Example | Notes |
-|-------|---------|-------|
-| `line` | `"4"` | a single line |
-| `scheduled_time` | `08:05` | scheduled departure at the stop |
-| `tolerance_minutes` | `2` | to match the run in the timetable |
-| `watch_from_minutes` | `30` | tracking starts N minutes before `scheduled_time` |
-| `alert_before_minutes` | `[10, 5]` | alerts relative to the **expected** departure |
-| `delay_alert_minutes` | `3` | delay threshold for an alert |
-| `walk_minutes` | `6` | optional: enables "leave now" |
-
-The run is identified each day from line, stop and scheduled time, never from a stored `trip_id`, because trip ids change between days and timetables.
-
-## 5. Scheduler
-
-- A single background task, ticking every 15 seconds.
-- Time comes from a `Clock` trait, so tests can use a fake clock (daylight saving, midnight, holidays).
-- On each tick it computes today's occurrences of every active rule in `Europe/Rome`:
-  - local times that do not exist (spring forward) are moved to the next valid minute;
-  - ambiguous times (fall back) use the first occurrence.
-- Each occurrence has a row in `rule_runs` (rule, date, status). This makes runs idempotent: after a restart, nothing already sent is sent again.
-- Calls to the upstream go through the Phase 1 departures cache, so a summary and a tracking on the same stop share the same calls.
-
-### Summary
-At `time`, fetch the departures, apply the filters, send a message. The message has a **Refresh** button that edits it with fresh data.
-
-### Tracking: state machine
+## 3. Architecture
 
 ```
-waiting ──(watch_from)──▶ searching ──(run found)──▶ tracking ──(departed)──▶ done
-                              │                          │
-                              └──(not found at T-10)──▶ not_found
-                                                         └──(cancelled)──▶ cancelled
+phone ──HTTPS──▶ Cloudflare (Access login) ──Tunnel──▶ Nginx Proxy Manager ──▶ :8100 container
+                                                                                  │
+                                              ┌───────────────────────────────────┤
+                                              │ /api/*  → API (auth: Access JWT or API_TOKEN)
+                                              │ /health → open
+                                              │ /*      → embedded web app (index.html for unknown paths)
 ```
 
-- **searching**: looks for the departure with the same line and a scheduled time within `tolerance_minutes`. Once found, the `trip_id` is stored for the rest of the day.
-- **tracking**: polls every 30 seconds. Events, each sent at most once:
-  - status message when the run is found (then edited in place with the current expected time);
-  - "leave now" at `expected − walk_minutes`;
-  - each threshold in `alert_before_minutes`;
-  - delay reaching `delay_alert_minutes`; a new alert only if the delay changes by 3 more minutes;
-  - cancellation (`realtimeState = CANCELED`).
-- **done**: the expected departure has passed. If L is confirmed, the final delay is stored.
-- **not_found**: 10 minutes before the scheduled time the run is still missing; one alert, then stop.
-- State (current phase, `trip_id`, events already sent, last expected time) is saved in `rule_runs`, so tracking survives a restart.
+- **`web/`**: the Svelte project (Vite, TypeScript). `npm run build` writes static files to `web/dist/`.
+- **Embedding**: the binary includes `web/dist/` at compile time (`rust-embed`), so the image still has a single file to run. In debug builds the files are read from disk, so a rebuild of the frontend does not need a Rust rebuild.
+- **Routing**: the app uses normal paths (`/fermata/39`); the backend answers any path that is not `/api/*`, `/health` or a file with `index.html`, and the app shows the right screen.
+- **Caching headers**: files with a content hash in the name are cached forever; `index.html`, the manifest and the service worker are never cached, so updates arrive immediately.
+- **Development**: `npm run dev` (Vite on port 5173, forwarding `/api` to `cargo run` on 8080) for instant reloads while working on the interface.
 
-Alerts are sent as new messages (they ring the phone). The status message is edited (silent).
+## 4. Authorization (decision S)
 
-## 6. Notifications
+- **Cloudflare Access** adds `Cf-Access-Jwt-Assertion` to every request that passed its login: a JWT signed by Cloudflare.
+- The backend verifies it: RS256 signature with the keys published at `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` (fetched at startup, cached, refreshed when an unknown key id appears), issuer = the team domain, audience = the Access application's AUD tag, not expired.
+- A request is allowed with a valid Access JWT **or** the `API_TOKEN` bearer token (scripts, `curl`, Shortcuts). With neither configured, the API stays open with a startup warning, as today (local development).
+- Static files are served without checks: they contain no data, and Access already protects them at the edge.
+- If the Access session expired, an API call is redirected to the Cloudflare login and fails in the browser; the app detects it and reloads the page, which shows the login.
 
-### `Notifier` interface
+New settings: `CF_ACCESS_TEAM_DOMAIN` (e.g. `myteam.cloudflareaccess.com`) and `CF_ACCESS_AUD`.
 
-```rust
-trait Notifier {
-    async fn send(&self, msg: &Message) -> Result<MessageRef>;
-    async fn edit(&self, msg_ref: &MessageRef, msg: &Message) -> Result<()>;
-}
-```
+## 5. Screens (decision P)
 
-Two implementations in this phase:
-- `TelegramNotifier`;
-- `LogNotifier`, which only writes to the log (development and tests).
+All text in Italian. Departures refresh every 30 seconds while the screen is visible and stop when the app is in the background.
 
-### Telegram
+| Screen | Path | Content | API |
+|--------|------|---------|-----|
+| Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 2–3 departures each | `/api/favorites/departures` (new, section 6) |
+| Search | `/cerca?q=` | results while typing (after 250 ms of pause): name, code, lines | `/api/stops?q=` |
+| Stop | `/fermata/{stop}` | name, code, lines as filter chips, star to save it, live departures: line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
+| Near me | `/vicino` | after the location permission: stops by distance, with lines | `/api/stops/nearby` |
+| Favorites | `/preferiti` | rename, choose lines, move up/down, remove | `/api/favorites` |
+| Info | `/info` | version, upstream status, last stop update, how to install on the Home Screen | `/api/status` |
 
-- Plain Bot API calls with `reqwest` (`sendMessage`, `editMessageText`, `answerCallbackQuery`, `getUpdates`). No large framework.
-- Inbound updates through long polling (`getUpdates`): no webhook, no open ports.
-- Only updates from `TELEGRAM_CHAT_ID` are handled; everything else is ignored and logged.
-- The `getUpdates` offset is stored in the database, so no command is processed twice.
-- Setup is manual: create the bot with BotFather and get the chat id (documented in the README).
+Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, notification settings.
 
-### Commands and buttons
+## 6. Backend changes
 
-| Command | Action |
-|---------|--------|
-| `/next <stop> [lines]` | next departures (e.g. `/next 39 4 15`) |
-| `/rules` | list rules with their state |
-| `/pause <id> [days]` | pause a rule (default: until resumed) |
-| `/resume <id>` | resume a rule |
-| `/skip <id>` | skip today only |
-| `/status` | upstream status, last stop sync, active trackings |
+- **Static files and fallback** (section 3).
+- **Authorization middleware** (section 4), replacing the token-only one; same `401 unauthorized` response.
+- **`GET /api/favorites/departures?limit=3`**: the favorites with their next departures in one call, so the home screen makes one request instead of one per favorite. Uses the departures cache; a favorite whose departures fail is returned with an error flag instead of failing the whole response.
+- **Settings**: `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`.
 
-| Button | Where | Action |
-|--------|-------|--------|
-| Refresh | summary | updates the message |
-| Stop tracking | tracking | ends today's tracking |
-| Skip today | summary, tracking | same as `/skip` |
+## 7. Look and feel (decision O)
 
-### Message examples (Italian, see decision J)
+- **Design tokens** as CSS variables: colors, spacing, radius, font sizes; one set for light, one for dark, chosen by the phone's setting.
+- **Line badges**: colored by vehicle type (tram, bus, metro, rail), the line name in bold.
+- **Departure rows** in the style of a departure board: line, destination, minutes aligned and large.
+- **Loading**: a small bus or tram moving along a dotted line, instead of a generic spinner; skeleton rows while departures load.
+- **Touch**: targets of at least 44 px, safe areas of the iPhone respected, no zoom on inputs.
+- Kept deliberately simple so it can be changed later; the first screens are reviewed together before moving on.
 
-```
-🚌 Casa → lavoro — Porta Nuova (39)
-4  → Falchera        07:43 (+2)  tra 3'
-15 → Sassi           07:47       tra 7'
-4  → Falchera        07:55 (+1)  tra 15'
-```
+## 8. Installable app (PWA) and offline (decision R)
 
-```
-⏰ Linea 4 delle 08:05 — Porta Nuova (39)
-Esci ora: passa alle 08:08 (+3), a piedi 6'.
-```
+- **Manifest**: name, short name, icons (192, 512, maskable), `display: standalone`, theme and background colors.
+- **iPhone**: `apple-touch-icon`, `apple-mobile-web-app-capable`, status bar style, launch background color.
+- **Service worker** (with `vite-plugin-pwa`, "inject manifest" mode so Phase 3 can add push handling): caches the app shell; API calls always go to the network.
+- **Last data**: the app keeps the last favorites and departures it loaded (in the browser's storage) and shows them, marked with their time, when the network is missing.
+- **Updates**: when a new version is deployed, the app shows "nuova versione disponibile" and reloads on tap.
 
-## 7. Upstream health monitor
+## 9. Docker and CI
 
-- Every upstream call reports success or failure to a shared monitor.
-- If there was no traffic in the last 5 minutes, a light probe query is sent.
-- Alerts:
-  - **down**: failures for at least 5 minutes in a row; one message, then silence;
-  - **recovered**: one message when calls succeed again;
-  - **schema changed**: a GraphQL validation error (HTTP 500 with `errors`) alerts immediately, because it means the API has changed and the code needs fixing;
-  - **stop sync failed**: two nightly syncs in a row failed.
+- **Dockerfile**: a new first stage on `node:22-slim` builds `web/dist/`; the Rust builder copies it before `cargo build`. The runtime image does not change.
+- **CI**: a second job installs Node, runs `npm ci`, the Svelte type check, the frontend tests and the build. The Rust job builds with the built frontend.
+- **`.dockerignore`**: excludes `web/node_modules` and local builds.
 
-## 8. Schema
+## 10. Deployment
 
-```sql
-CREATE TABLE rules (
-  id            INTEGER PRIMARY KEY,
-  name          TEXT NOT NULL,
-  kind          TEXT NOT NULL,        -- "summary" | "track"
-  enabled       INTEGER NOT NULL DEFAULT 1,
-  stop_id       TEXT NOT NULL,
-  days          TEXT NOT NULL,        -- JSON: ["mon", ...]
-  skip_holidays INTEGER NOT NULL DEFAULT 1,
-  paused_until  TEXT,                 -- date, optional
-  config        TEXT NOT NULL,        -- JSON with the kind-specific fields (section 4)
-  created_at    TEXT NOT NULL,
-  updated_at    TEXT NOT NULL
-);
+1. **Hostname and Access (decision T)**: choose the subdomain; in Cloudflare Zero Trust create an Access application for it with a policy listing the allowed emails and a 30-day session; note the AUD tag and the team domain.
+2. **Cloudflare Tunnel**: a public hostname for the subdomain, pointing to Nginx Proxy Manager.
+3. **Nginx Proxy Manager**: a proxy host for the subdomain → server port 8100.
+4. **Server**: the Phase 1 steps in [../user/deploy.md](../user/deploy.md) (Docker Hub image, folder, `./data` owned by uid 10001), with `API_TOKEN`, `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` in `.env`.
+5. **Check**: login through Access from the phone; a direct request to port 8100 without the signature is refused; install on both phones.
 
-CREATE TABLE rule_runs (
-  rule_id    INTEGER NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
-  date       TEXT NOT NULL,           -- service date, Europe/Rome
-  status     TEXT NOT NULL,           -- waiting, searching, tracking, done, not_found, cancelled, skipped, failed
-  state      TEXT,                    -- JSON: trip_id, events sent, last expected time, status message ref
-  updated_at TEXT NOT NULL,
-  PRIMARY KEY (rule_id, date)
-);
-
-CREATE TABLE notifications (
-  id         INTEGER PRIMARY KEY,
-  rule_id    INTEGER,                 -- null for system alerts
-  kind       TEXT NOT NULL,           -- summary, alert, status, system
-  channel    TEXT NOT NULL,           -- "telegram", "log"
-  message_ref TEXT,
-  text       TEXT NOT NULL,
-  sent_at    TEXT NOT NULL
-);
-
-CREATE TABLE observed_delays (        -- only if decision L is confirmed
-  rule_id        INTEGER NOT NULL,
-  date           TEXT NOT NULL,
-  trip_id        TEXT NOT NULL,
-  line           TEXT NOT NULL,
-  stop_id        TEXT NOT NULL,
-  scheduled      TEXT NOT NULL,
-  final_expected TEXT NOT NULL,
-  delay_seconds  INTEGER NOT NULL,
-  PRIMARY KEY (rule_id, date)
-);
-
-CREATE TABLE kv (                     -- small internal state, e.g. Telegram update offset
-  key   TEXT PRIMARY KEY,
-  value TEXT NOT NULL
-);
-```
-
-`config` is JSON because the two rule kinds have different fields; it is validated with typed Rust structs on read and write.
-
-## 9. API
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/rules` | list rules with today's state |
-| POST | `/api/rules` | create a rule |
-| GET | `/api/rules/{id}` | rule details |
-| PATCH | `/api/rules/{id}` | edit a rule |
-| DELETE | `/api/rules/{id}` | delete a rule |
-| POST | `/api/rules/{id}/pause` | pause, with optional `until` date |
-| POST | `/api/rules/{id}/resume` | resume |
-| POST | `/api/rules/{id}/test` | run the rule now and send the result |
-| GET | `/api/rules/{id}/runs` | recent runs |
-| GET | `/api/notifications` | sent notifications log |
-| POST | `/api/notifications/test` | send a test message to the channel |
-
-Validation errors use the Phase 1 error format (`invalid_request`, with the invalid field in the message).
-
-## 10. Configuration
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `TELEGRAM_BOT_TOKEN` | empty | when empty, `LogNotifier` is used |
-| `TELEGRAM_CHAT_ID` | empty | the only chat allowed to receive and send |
-| `SCHEDULER_TICK_SECS` | `15` | scheduler tick |
-| `TRACK_POLL_SECS` | `30` | polling interval during tracking |
-| `MISSED_RUN_GRACE_MINUTES` | `5` | decision M |
-| `UPSTREAM_DOWN_ALERT_MINUTES` | `5` | delay before the "down" alert |
+Each step is done together, explaining what it does (as for the first release).
 
 ## 11. Tests
 
-- **Unit, with fake clock**: rule occurrences (weekdays, holidays, Easter Monday, pause, skip), daylight saving on both days, midnight.
-- **Tracking state machine**: sequences of departures from fixtures (run on time, run getting later, run cancelled, run never appearing, restart in the middle) checked against the expected events.
-- **Telegram**: fake Bot API server (`wiremock`): send, edit, commands, callbacks, chats that are not allowed.
-- **Idempotency**: restart simulated between two ticks; no duplicate notification.
-- **Health monitor**: failure sequences, single alert, recovery.
+- **Rust**: Access JWT verification with a test key and a fake key server (`wiremock`): valid, expired, wrong audience, wrong issuer, unknown key, missing header, token fallback; static files (fallback to `index.html`, cache headers); `/api/favorites/departures`.
+- **Frontend**: unit tests (Vitest) for formatting (minutes, delays, times) and the API client; Svelte type check.
+- **By hand**: each screen on an iPhone and an Android phone, installed and in the browser; offline; dark mode.
 
 ## 12. Development order
 
-Each step in its own branch with a PR to `main`. When all steps are complete, `v0.2.0` is released.
+Each step in its own branch with a PR to `main` and its chapter in `docs/development/`. When all steps are complete, `v0.2.0` is released and deployed.
 
-1. **Rules**: migrations, typed config, CRUD API, holiday calendar, occurrence calculation with fake clock. Check: tests on occurrences.
-2. **Notifier**: interface, `LogNotifier`, `TelegramNotifier` (send and edit), `/api/notifications/test`. Check: a test message arrives on the phone.
-3. **Scheduler and summaries**: tick, `rule_runs`, summary rules, `/api/rules/{id}/test`. Check: summary DoD criterion.
-4. **Tracking**: state machine, alerts, status message, cancellation and not found. Check: tracking DoD criterion on a real run.
-5. **Telegram inbound**: long polling, chat id check, commands, buttons.
-6. **Health monitor**: down, recovered, schema changed, sync failed.
-7. **Delay history**: `observed_delays` (if decision L is confirmed).
+1. **Frontend skeleton**: `web/` with Svelte, Vite and TypeScript; embedding and fallback in the binary; Node stage in the Dockerfile; CI job. Check: a placeholder page served by `cargo run` and by the container.
+2. **Authorization**: Access JWT or `API_TOKEN`; settings.
+3. **Design base**: tokens, light/dark, layout and navigation, line badges, transport loaders. Reviewed together before going on.
+4. **Search and stop**: search screen, stop screen with live departures and line filters.
+5. **Home and favorites**: `/api/favorites/departures`, home cards, favorites management, star on the stop screen.
+6. **Near me**: location permission and nearby list.
+7. **PWA and offline**: manifest, icons, service worker, last data, update prompt, iPhone details.
+8. **Info screen**.
+9. **Deployment** (section 10) and release `v0.2.0`.
 
 ## 13. Out of scope for this phase
 
-- Web interface for rules (Phase 3)
-- ntfy and Web Push channels (the interface allows them later)
-- Statistics on delays (only the data is collected)
-- Multiple users or multiple chats
-- Rules spanning several stops or interchanges
+- Rules, trip tracking, notifications (Phase 3)
+- Map of stops or vehicles (future idea)
+- Multiple users
+- English interface
 
 ## 14. Risks
 
 | Risk | Mitigation |
 |------|------------|
-| Real-time data is missing for a run (`realtime: false`) | Alerts fall back to the scheduled time and the message says so |
-| The run cannot be matched (timetable change, wrong scheduled time) | `not_found` alert with the closest departures of that line, so the rule can be fixed |
-| Telegram is unreachable | Retry with backoff; alerts older than their useful time are dropped, not sent late |
-| Too many upstream calls during tracking | Shared departures cache; polling only inside the watch window |
-| Clock drift on the Pi | NTP is enabled on the host (check during deployment) |
+| iPhone PWA quirks (storage limits, install flow, standalone behavior) | Tested on a real iPhone from step 7; Info screen explains how to install |
+| Access session expiry breaks API calls in the installed app | 30-day session; the app detects the redirect and reloads to show the login |
+| Cloudflare's keys cannot be fetched at startup | Keys cached and refreshed in the background; requests with an Access JWT are refused (not let through) until keys are available; `API_TOKEN` still works |
+| Node build makes Docker builds slower | Separate cached stage; only rebuilt when `web/` changes |
+| The frontend grows heavy on the phone | Svelte compiles to small files; size checked at each step |
