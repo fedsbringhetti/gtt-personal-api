@@ -1,6 +1,6 @@
 # Phase 2 — Web app and first deployment: detailed plan
 
-Status: **approved** on 2026-10-30. Only the hostname and the Access policy (decision T) are left for the deployment step. Development not started yet.
+Status: **approved** on 2026-10-30. Only the hostname and the Access policy (decision T) are left for the deployment step. In development since 2026-10-30.
 
 Builds on Phase 1: the API (stops, departures, favorites, status), the Docker image and the deployment files.
 
@@ -29,7 +29,7 @@ It also lays the ground for Phase 3, whose notifications (Web Push) need an inst
 |---|-------|----------|
 | — | Order, phones, language, remote access | From `PLAN.md` (decisions 3, 7, 8, 9): web app before rules; iPhone and Android, designed for iPhone's stricter rules; Italian; Cloudflare Tunnel → Nginx Proxy Manager → host port 8100, protected by Cloudflare Access |
 | — | Serving | The same binary serves the web app and the API: one container, one origin |
-| N | Frontend technology | **Svelte** with **Vite**, compiled to static files that the Rust binary embeds. TypeScript, so API responses have types |
+| N | Frontend technology | **Svelte** with **Vite**, compiled to static files that the Rust binary embeds. TypeScript, so API responses have types. Plain Svelte, not SvelteKit: no server rendering is needed and a small router of our own covers six screens (decided 2026-10-30). **Node 24 LTS** everywhere: local, Docker, CI |
 | O | Look and feel | Clean, iOS-like (system font, generous spacing, rounded cards, light/dark following the phone), with a **transport character**: line badges colored by vehicle type, departure-board rows, loading indicators with a moving bus or tram. To be refined during development |
 | P | Screens | Home, search, stop, near me (list, no map), favorites, info (section 5) |
 | Q | Position | Asked only when tapping "vicino a me"; used for that search only, never stored |
@@ -49,8 +49,8 @@ phone ──HTTPS──▶ Cloudflare (Access login) ──Tunnel──▶ Nginx
 ```
 
 - **`web/`**: the Svelte project (Vite, TypeScript). `npm run build` writes static files to `web/dist/`.
-- **Embedding**: the binary includes `web/dist/` at compile time (`rust-embed`), so the image still has a single file to run. In debug builds the files are read from disk, so a rebuild of the frontend does not need a Rust rebuild.
-- **Routing**: the app uses normal paths (`/fermata/39`); the backend answers any path that is not `/api/*`, `/health` or a file with `index.html`, and the app shows the right screen.
+- **Embedding**: the binary includes `web/dist/` at compile time (`rust-embed`), so the image still has a single file to run. In debug builds the files are read from disk, so a rebuild of the frontend does not need a Rust rebuild. A missing `web/dist/` does not break the Rust build: `cargo build` and `cargo test` work without Node, and the server logs a warning at startup.
+- **Routing**: the app uses normal paths (`/fermata/39`); the backend answers any path that is not `/api/*`, `/health` or a file with `index.html`, and the app shows the right screen. Unknown `/api/*` paths and missing files under `/assets/` stay a real 404, so the browser never receives HTML in place of a script.
 - **Caching headers**: files with a content hash in the name are cached forever; `index.html`, the manifest and the service worker are never cached, so updates arrive immediately.
 - **Development**: `npm run dev` (Vite on port 5173, forwarding `/api` to `cargo run` on 8080) for instant reloads while working on the interface.
 
@@ -105,8 +105,8 @@ Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, noti
 
 ## 9. Docker and CI
 
-- **Dockerfile**: a new first stage on `node:22-slim` builds `web/dist/`; the Rust builder copies it before `cargo build`. The runtime image does not change.
-- **CI**: a second job installs Node, runs `npm ci`, the Svelte type check, the frontend tests and the build. The Rust job builds with the built frontend.
+- **Dockerfile**: a new first stage on `node:24-slim` builds `web/dist/`; the Rust builder copies it before `cargo build`. The runtime image does not change.
+- **CI**: a second job installs Node, runs `npm ci`, the Svelte type check, the frontend tests and the build. The two jobs run in parallel and independently: the Rust tests for static files use a small fixture folder, not the real build, and the Docker build is where the two meet (decided 2026-10-30).
 - **`.dockerignore`**: excludes `web/node_modules` and local builds.
 
 ## 10. Deployment
