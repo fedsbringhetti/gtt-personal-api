@@ -4,8 +4,9 @@
 1. Every relative link in the Markdown files points to an existing file, and every
    `#anchor` to an existing heading.
 2. Every code excerpt in docs/ still matches the real code. Each significant line of a
-   ```rust, ```sql, ```dockerfile, ```yaml or ```graphql block must appear in the matching
-   source files, ignoring whitespace (so a call reflowed onto one line still matches).
+   ```rust, ```sql, ```dockerfile, ```yaml, ```graphql, ```ts, ```svelte or ```html block
+   must appear in the matching source files, ignoring whitespace (so a call reflowed onto
+   one line still matches).
    Lines with "...", comments and very short lines are skipped. A block whose info string
    contains "illustrative" (```sql illustrative) is not checked, and neither are the plans in
    docs/plan/, which describe code before it exists.
@@ -29,6 +30,9 @@ SOURCES = {
     "dockerfile": ["Dockerfile"],
     "yaml": ["docker-compose.yml", ".github/workflows/*.yml"],
     "graphql": ["src/upstream/queries.rs"],
+    "ts": ["web/src/**/*.ts", "web/*.ts"],
+    "svelte": ["web/src/**/*.svelte"],
+    "html": ["web/index.html"],
 }
 COMMENT_PREFIXES = {
     "rust": ("//", "///", "//!"),
@@ -36,6 +40,9 @@ COMMENT_PREFIXES = {
     "dockerfile": ("#",),
     "yaml": ("#",),
     "graphql": ("#",),
+    "ts": ("//", "/*", "*"),
+    "svelte": ("//", "/*", "*", "<!--"),
+    "html": ("<!--",),
 }
 MIN_LINE_LEN = 12
 
@@ -62,7 +69,7 @@ def strip_comments(text, language):
         return re.sub(r"(?m)^\s*#[^\n]*", "", text)
     if language == "yaml":
         return re.sub(r"(?m)^\s*#[^\n]*", "", text)
-    if language == "rust":
+    if language in ("rust", "ts", "svelte"):
         return re.sub(r"(?m)\s//[^\n]*$", "", text)  # trailing comments; keeps "http://"
     return text
 

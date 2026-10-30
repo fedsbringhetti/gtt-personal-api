@@ -34,9 +34,11 @@ RULES = [
     ("scripts/*", ["docs/user/deploy.md", "README.md"], "build and release commands"),
     ("tests/*", ["docs/development/README.md"], "test layout and helpers"),
     (".github/workflows/*", ["docs/development/README.md"], "the checks CI runs"),
+    ("web/package.json", ["docs/development/README.md", "CLAUDE.md"], "frontend commands, checks and dependencies"),
+    ("web/*", ["docs/architecture.md"], "the web app: structure, screens and build"),
 ]
 
-CODE_PREFIXES = ("src/", "migrations/", "tests/", "scripts/", ".github/")
+CODE_PREFIXES = ("src/", "migrations/", "tests/", "scripts/", ".github/", "web/")
 CODE_FILES = ("Dockerfile", "docker-compose.yml", ".env.example", "Cargo.toml")
 
 
