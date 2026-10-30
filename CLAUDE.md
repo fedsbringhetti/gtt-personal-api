@@ -5,8 +5,9 @@ Personal service for real-time GTT public transport departures in Turin: Rust ba
 ## Reference documents
 
 - [PLAN.md](PLAN.md): project phases, cross-cutting decisions, workflow.
-- [docs/phase-1.md](docs/phase-1.md): detailed plan for Phase 1 (core backend).
-- [docs/guide.md](docs/guide.md): how the service works and how to use it; keep it up to date when behavior changes.
+- [docs/README.md](docs/README.md): documentation index and layout.
+- [docs/plan/](docs/plan/phase-1.md): detailed plan of each phase.
+- [docs/architecture.md](docs/architecture.md), [docs/user/](docs/user/api.md), [docs/development/](docs/development/README.md): how it works, how to use it, how it was built.
 
 Decisions already made are recorded in these files: follow them, and when a choice is not covered, ask instead of deciding alone.
 
@@ -18,7 +19,8 @@ Decisions already made are recorded in these files: follow them, and when a choi
 ## How we work
 
 - Plan first, then build. Do not write code, project skeletons or configuration files for a phase until the user explicitly says to start.
-- Each phase has a detailed plan in `docs/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
+- Each phase has a detailed plan in `docs/plan/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
+- Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`.
 
 ## Git
 
@@ -31,7 +33,7 @@ Decisions already made are recorded in these files: follow them, and when a choi
 
 - Rust: `axum`, `tokio`, `reqwest` (rustls), `sqlx` + SQLite (FTS5), `serde`, `chrono` + `chrono-tz`, `moka`, `tracing`, `thiserror`.
 - Multi-stage Docker for `linux/arm64`; public images on Docker Hub as `federicosbringhetti/gtt-personal-api`.
-- Deployment follows the home server conventions in [docs/deploy.md](docs/deploy.md): host port 8100, bind mount `./data`, secrets only in `.env`.
+- Deployment follows the home server conventions in [docs/user/deploy.md](docs/user/deploy.md): host port 8100, bind mount `./data`, secrets only in `.env`.
 
 ## Data source
 
@@ -47,7 +49,7 @@ OpenTripPlanner GraphQL API at `https://plan.muoversiatorino.it/otp/routers/mato
 
 ## Commands
 
-There is no code yet. Once there is, before every PR:
+Before every PR:
 
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test

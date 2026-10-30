@@ -276,7 +276,7 @@ In paths, `{stop}` accepts the GTT code (`39`) or the full `gtfsId` (`gtt:39`, `
 - **docker-compose.yml**, following the home server conventions: folder `/home/federico/gtt-personal-api/`, explicit `container_name`, host port 8100 → container 8080 (8080 is taken on the host), bind mount `./data:/data` (what the backup saves), `env_file: .env` with `.env.example` in the repository, `TZ: Europe/Rome`, `healthcheck`, `restart: unless-stopped`, 128 MB memory limit. The `data` folder must belong to uid 10001.
 - **`scripts/build-image.sh [--push]`** builds the arm64 image tagged with the Cargo version and `latest`, and optionally pushes it to Docker Hub.
 - Target: image under 40 MB. Measured: 38 MB to download, 138 MB uncompressed (108 MB Debian base, 15 MB binary). A distroless base would roughly halve the uncompressed size but removes the shell used for debugging on the Pi.
-- Deployment steps: [deploy.md](deploy.md).
+- Deployment steps: [../user/deploy.md](../user/deploy.md).
 
 ## 13. Tests
 

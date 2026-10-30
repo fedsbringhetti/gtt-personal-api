@@ -104,6 +104,6 @@ To roll back, put the previous tag back and run the same commands.
 
 - **Backup**: `./data` is what needs saving; copy the whole folder, since the database is split across `gtt.db`, `gtt.db-wal` and `gtt.db-shm`. Pausing the container for a few seconds is safe. If the pause overlaps the nightly stop sync (`STOPS_SYNC_TIME`, default 04:00), that sync may fail and is retried after 5 minutes. The stop index is rebuilt automatically anyway; the valuable data are favorites (and, from Phase 2, rules).
 - **Logs** go to stdout only (`docker compose logs`); nothing is written to log files.
-- **Remote access** (LAN only, Tailscale, Cloudflare Tunnel) is still an open decision in `PLAN.md`; keep `API_TOKEN` set in the meantime.
+- **Remote access** (LAN only, Tailscale, Cloudflare Tunnel) is still an open decision in [PLAN.md](../../PLAN.md); keep `API_TOKEN` set in the meantime.
 - **Limits**: non-root user, 128 MB memory limit, `restart: unless-stopped`.
 - **Measured** on 2026-10-29 (arm64 under Docker on the Mac): download size about 38 MB (138 MB uncompressed: 108 MB Debian base, 15 MB binary); 32 MB of memory after sync and requests; first sync of 19,422 stops in 1.7 s; restart in 0.14 s.
