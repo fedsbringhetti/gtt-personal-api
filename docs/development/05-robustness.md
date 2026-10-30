@@ -17,7 +17,7 @@ Make the service behave well when the unofficial upstream misbehaves, show what 
 |----------|-----|
 | **Retry once, after 300 ms, only on connection errors and HTTP 502–504** | These are often temporary. Timeouts are not retried: they already waited the whole timeout (10 s), and retrying would double the wait. GraphQL errors and invalid responses would fail the same way again. The plan said "network errors"; 502–504 were added and timeouts excluded. |
 | **Stale data for at most 2 minutes**, with `fetched_at` in every response | Departures older than that are more misleading than useful. The client sees how old the data is. |
-| **Passive health tracking** (every call records its outcome) | No extra traffic to the upstream. Phase 2 will add a probe and alerts on top. |
+| **Passive health tracking** (every call records its outcome) | No extra traffic to the upstream. Phase 3 will add a probe and alerts on top. |
 | **Token optional, `/health` always open** | Without a token the service is usable on a trusted network; Docker's health check has no token. |
 | **Constant-time comparison; token never logged** | Response times do not reveal how much of a guess was right; logs and config errors stay safe to share. |
 
@@ -192,4 +192,4 @@ With an unreachable upstream, a departures request shows the retry in the logs, 
 ## Later changes
 
 - [Step 6](06-docker.md) uses the open `/health` for the Docker health check.
-- Phase 2 builds the upstream alerts on `UpstreamHealth`.
+- Phase 3 builds the upstream alerts on `UpstreamHealth`.

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Personal service for real-time GTT public transport departures in Turin: Rust backend, packaged as a Docker image for an Orange Pi 5 (ARM64); tested locally for now, first deployment planned with Phase 3. Single user.
+Personal service for real-time GTT public transport departures in Turin: Rust backend, packaged as a Docker image for an Orange Pi 5 (ARM64); tested locally for now, first deployment planned with Phase 2 (web app). Single user.
 
 ## Reference documents
 
@@ -19,6 +19,7 @@ Decisions already made are recorded in these files: follow them, and when a choi
 ## How we work
 
 - Plan first, then build. Do not write code, project skeletons or configuration files for a phase until the user explicitly says to start.
+- Involve the user step by step: before a multi-step process (development step, release, deployment, git or GitHub operations) outline the steps, explain what each one does as it runs, and stop for their OK before changing the repository or anything outside it. They want to understand how things work, not only get them done.
 - Each phase has a detailed plan in `docs/plan/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
 - Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`. Use the `docs-sync` skill (`.claude/skills/docs-sync/`) for this: a hook blocks commits and PRs whose code changes have no documentation update.
 

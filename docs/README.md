@@ -24,7 +24,8 @@ docs/
 │   └── NN-*.md            one chapter per development step, in order
 └── plan/
     ├── phase-1.md         detailed plan of Phase 1 (done)
-    └── phase-2.md         detailed plan of Phase 2 (draft)
+    ├── phase-2.md         Phase 2: web app and first deployment (approved)
+    └── phase-3.md         Phase 3: rules, trip tracking, Web Push (decisions confirmed)
 ```
 
 ## Keeping it current

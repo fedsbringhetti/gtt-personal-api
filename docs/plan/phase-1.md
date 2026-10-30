@@ -1,6 +1,8 @@
 # Phase 1 — Core backend: detailed plan
 
-Status: **approved**, decisions confirmed on 2026-10-29. Development not started yet.
+Status: **done**, released as `v0.1.0` on 2026-10-30. Decisions confirmed on 2026-10-29.
+
+> Phase numbering changed on 2026-10-30: the web app and first deployment became Phase 2, rules and notifications Phase 3. References below use the new numbering. Development not started yet.
 
 ## 1. Goal
 
@@ -17,7 +19,7 @@ An HTTP API, packaged as a Docker image for the Orange Pi 5, that can:
 - [x] Times stay correct after midnight and across daylight saving changes (covered by tests).
 - [x] If the upstream is down, stop search still works and departures return a clear error (or stale data up to 2 minutes old).
 - [x] The container survives a restart without losing data and uses less than 50 MB of RAM at idle (32 MB measured, arm64 under Docker on the Mac).
-- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned with Phase 3.
+- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned with Phase 2.
 
 ## 2. Decisions
 
@@ -26,7 +28,7 @@ An HTTP API, packaged as a Docker image for the Orange Pi 5, that can:
 | A | Which feeds to index? | All four (about 19,400 stops, 5.7 MB, downloaded in 2 seconds); filtering happens at search time, defaulting to `gtt` only |
 | B | Authentication | No login; optional token (`API_TOKEN`) required when set |
 | C | Users | Single user: favorites are not tied to an account |
-| D | Delay history | Not in this phase; the schema does not rule it out and it will be revisited in Phase 2 |
+| D | Delay history | Not in this phase; the schema does not rule it out. Decided later: yes, for tracked runs, in Phase 3 |
 | E | Compatible `/query.php?stop=` endpoint | No |
 | F | How the image gets to the Orange Pi | Built on the Mac (`linux/arm64`, native on Apple Silicon) and pushed to Docker Hub as a public image (`federicosbringhetti/gtt-personal-api`), following the home server conventions. Changed from GHCR on 2026-10-29 |
 
@@ -295,20 +297,20 @@ Each step ends with something verifiable and is developed in its own branch with
 3. **Stop index**: migrations, sync, normalization, search, nearby stops, details. Check: the search criteria in section 1.
 4. **Favorites**: table and endpoints.
 5. **Robustness**: `stale` responses, retry, `/api/status`, optional token.
-6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 3.
+6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 2.
 
 ## 15. Out of scope for this phase
 
-- Rules, scheduler and notifications (Phase 2)
-- Delay history (to be decided in Phase 2)
+- Rules, scheduler and notifications (Phase 3)
+- Delay history (Phase 3)
 - Service alerts (`alerts`): the upstream always returns an empty list, to be re-checked later
-- Web interface (Phase 3)
+- Web interface (Phase 2)
 - Multiple users
 
 ## 16. Risks
 
 | Risk | Mitigation |
 |------|------------|
-| The upstream changes schema or stops responding | Clear errors, smoke test, search independent of the upstream; automatic alert in Phase 2 |
+| The upstream changes schema or stops responding | Clear errors, smoke test, search independent of the upstream; automatic alert in Phase 3 |
 | The upstream starts rate limiting | Cache, a single call per stop, sync once a day |
 | Incomplete stop data (e.g. metro without code) | Fallback code from the id, tests on known cases |

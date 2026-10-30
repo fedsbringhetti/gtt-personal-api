@@ -178,4 +178,4 @@ Restart the service and list again: favorites and their order are kept, and the 
 ## Later changes
 
 - [Step 5](05-robustness.md) puts these endpoints behind the optional token.
-- Phase 2 rules will reference stops the same way (by id, no foreign key).
+- Phase 3 rules will reference stops the same way (by id, no foreign key).
