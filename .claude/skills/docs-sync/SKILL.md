@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: Keep gtt-personal-api's documentation in sync with the code. Use whenever code changes in src/, migrations/, tests/, Dockerfile, docker-compose.yml, .env.example, scripts/ or CI — after implementing a feature or fix, when finishing a development step, before committing or opening a PR, and whenever the docs gate hook blocks a commit. Also use when the user asks to check, update, review or fix the docs, even if they do not say "docs" (e.g. "is everything documented?", "update the guide").
+description: Keep gtt-personal-api's documentation in sync with the code. Use whenever code changes in src/, migrations/, tests/, web/, Dockerfile, docker-compose.yml, .env.example, scripts/ or CI — after implementing a feature or fix, when finishing a development step, before committing or opening a PR, and whenever the docs gate hook blocks a commit. Also use when the user asks to check, update, review or fix the docs, even if they do not say "docs" (e.g. "is everything documented?", "update the guide").
 ---
 
 # Docs sync
@@ -37,6 +37,7 @@ It lists the code changed on this branch (commits since `main`, plus staged, uns
 | endpoint, parameter, default, limit, response field, error code | `docs/user/api.md` (tables, examples, error table); README quick start if its commands changed |
 | a setting | `docs/user/configuration.md`, `.env.example`, the summary table in `docs/user/deploy.md` |
 | design, a new module, a new table or migration | `docs/architecture.md`: "How it works", "Code map", "Data" |
+| the web app (`web/`): screens, structure, build | `docs/architecture.md`; `docs/development/README.md` if its commands or checks changed |
 | Dockerfile, compose, scripts | `docs/user/deploy.md` (steps and summary table), README |
 | test helpers, test layout, CI | `docs/development/README.md` |
 | something learned about the upstream API | the "Data source" notes in `CLAUDE.md` |
@@ -66,7 +67,7 @@ What makes a chapter worth reading:
 python3 .claude/skills/docs-sync/scripts/check_docs.py
 ```
 
-It checks every relative link and anchor, and that every significant line of the ```rust, ```sql, ```dockerfile, ```yaml and ```graphql blocks in `docs/` (plans excluded) still exists in the code, ignoring whitespace. Fix every problem it reports; a missing excerpt line usually means the code changed and the explanation around it needs a look too, not just the snippet.
+It checks every relative link and anchor, and that every significant line of the ```rust, ```sql, ```dockerfile, ```yaml, ```graphql, ```ts, ```svelte and ```html blocks in `docs/` (plans excluded) still exists in the code, ignoring whitespace. Fix every problem it reports; a missing excerpt line usually means the code changed and the explanation around it needs a look too, not just the snippet.
 
 When you added or changed `curl` examples, run them against a local server (`cargo run`) when possible.
 

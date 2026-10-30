@@ -14,6 +14,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 4 | [Favorites](04-favorites.md): ordered favorites, JSON bodies, partial updates | 1 | [#6](https://github.com/fedsbringhetti/gtt-personal-api/pull/6) |
 | 5 | [Robustness](05-robustness.md): retry, stale data, status, optional token | 1 | [#7](https://github.com/fedsbringhetti/gtt-personal-api/pull/7) |
 | 6 | [Docker](06-docker.md): image, health check, compose, deployment files | 1 | [#8](https://github.com/fedsbringhetti/gtt-personal-api/pull/8) |
+| 7 | [Web app skeleton](07-web-skeleton.md): Svelte + Vite project, embedding in the binary, Node stage, frontend CI | 2 | [#11](https://github.com/fedsbringhetti/gtt-personal-api/pull/11) |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
@@ -32,17 +33,34 @@ cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
 
 ```bash
+cd web && npm run check && npm test && npm run build
+```
+
+```bash
 python3 .claude/skills/docs-sync/scripts/check_docs.py
 ```
 
-The second command checks the documentation: every relative link and anchor, and that the code excerpts in `docs/` still match the code (see [Keeping the docs in sync](#keeping-the-docs-in-sync)). All these checks run in GitHub Actions (`.github/workflows/ci.yml`) on every PR and on every push to `main`.
+The second command checks the web app: types (`svelte-check` and `tsc`), unit tests (Vitest) and the build. The third checks the documentation: every relative link and anchor, and that the code excerpts in `docs/` still match the code (see [Keeping the docs in sync](#keeping-the-docs-in-sync)). All these checks run in GitHub Actions (`.github/workflows/ci.yml`) on every PR and on every push to `main`, in two parallel jobs: `rust` (docs, format, clippy, tests) and `frontend` (install, type check, tests, build).
+
+### Working on the web app
+
+```bash
+cargo run
+```
+
+```bash
+cd web && npm run dev
+```
+
+Open `http://localhost:5173`: Vite reloads the page on every save and forwards `/api` to the backend on 8080. To see the web app as the binary serves it, run `npm run build` and open `http://localhost:8080` (debug builds read `web/dist/` from disk, so no Rust rebuild is needed). Node 24 is the reference version (`web/.nvmrc`), the same as Docker and CI.
 
 ### Tests
 
 - **Unit tests** sit at the bottom of each source file in a `#[cfg(test)] mod tests` block. They test pure functions: times, normalization, ranking helpers, config parsing, sync scheduling, token parsing.
-- **Integration tests** live in `tests/`, one file per area (`departures.rs`, `stops.rs`, `favorites.rs`, `status.rs`, `auth.rs`, `health.rs`). They build the real router with an in-memory database, a fixed clock and a fake upstream server (`wiremock`), then send HTTP requests to it.
-- **Shared helpers** are in `tests/common/mod.rs`: `test_app` / `test_app_with` (app with options), `synced_app` (app with the stop index already loaded), `get`, `send`, `request`.
-- **Fixtures** in `tests/fixtures/` are real upstream responses saved to files: `stop_39.json` (departures at Porta Nuova) and `all_stops.json` (44 real stops).
+- **Integration tests** live in `tests/`, one file per area (`departures.rs`, `stops.rs`, `favorites.rs`, `status.rs`, `auth.rs`, `health.rs`, `web.rs`). They build the real router with an in-memory database, a fixed clock and a fake upstream server (`wiremock`), then send HTTP requests to it.
+- **Shared helpers** are in `tests/common/mod.rs`: `test_app` / `test_app_with` (app with options), `synced_app` (app with the stop index already loaded), `get`, `send`, `request`, `get_text` (for responses that are not JSON).
+- **Fixtures** in `tests/fixtures/` are real upstream responses saved to files: `stop_39.json` (departures at Porta Nuova) and `all_stops.json` (44 real stops). `tests/fixtures/web/` is a tiny stand-in for the built web app, so the Rust tests never need Node.
+- **Web app tests** are Vitest files next to the code they test (`web/src/lib/status.test.ts`), run with `npm test` in `web/`.
 
 ### Common changes
 
@@ -52,6 +70,8 @@ The second command checks the documentation: every relative link and anchor, and
 | Database change | new `migrations/000N_description.sql`, applied at the next startup; never edit a migration that already ran |
 | New upstream field | query in `src/upstream/queries.rs`, shape in `src/upstream/types.rs`, refresh fixtures if tests need it |
 | New setting | `Config` in `src/config.rs` with a default and a test, then [../user/configuration.md](../user/configuration.md) and `.env.example` |
+| Web app code | `web/src/`: components in `.svelte` files, logic in `.ts` modules under `lib/` with a `.test.ts` next to them |
+| Node version | `web/.nvmrc` (CI reads it) and the `FROM node:` line in the `Dockerfile` |
 
 ## Writing a chapter
 

@@ -9,9 +9,10 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **stop search by name** (the upstream name search is broken) and by position, on a local copy of all ~19,400 stops;
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
-- **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token.
+- **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
+- **a web app** for the phone, served by the same binary (Phase 2, in development: for now a placeholder page).
 
-It is a single Rust binary with an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
+It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
 ## How it works
 
@@ -35,6 +36,17 @@ It is a single Rust binary with an SQLite database, built as a Docker image for 
 ```
 
 `main.rs` reads the configuration, opens the database (applying migrations), starts the background sync task and serves HTTP until Ctrl+C or SIGTERM, finishing requests in progress.
+
+The router answers `/health` and `/api/*`; every other GET goes to the web app (next section).
+
+### Web app
+
+- **Source**: `web/`, a Svelte project with Vite and TypeScript. `npm run build` compiles it to plain files in `web/dist/`: `index.html` and, under `assets/`, scripts and styles with a content hash in their name.
+- **Embedding**: `src/web.rs` uses `rust-embed`. Release builds (and so the Docker image) include `web/dist/` in the binary; debug builds read it from disk at every request, so `npm run build` is enough to see a change with `cargo run`. Without `web/dist/` the binary still builds and runs, with the API only, and logs a warning.
+- **Paths**: an existing file is served as is; `/api/*` and missing files under `/assets/` are 404; any other path gets `index.html`, and the app shows the screen for that path (`/fermata/39`).
+- **Cache**: files under `assets/` are cached by the browser for a year (`immutable`: a new build gives them new names); everything else is `no-cache`, so a new version is picked up at the next load.
+- **Access**: the web app is not behind the token; it holds no data, and its API calls are checked like any other.
+- **Development**: `npm run dev` in `web/` serves the app on port 5173 with instant reloads and forwards `/api` to `cargo run` on 8080.
 
 ### Departures
 
@@ -92,6 +104,10 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/api/status.rs`, `health.rs` | `/api/status`, `/health` |
 | `src/api/auth.rs` | `API_TOKEN` middleware |
 | `src/api/error.rs` | error codes and JSON error responses |
+| `src/web.rs` | embedded web app: file lookup, fallback to `index.html`, cache headers |
+| `web/src/main.ts`, `App.svelte` | web app entry point and root component |
+| `web/src/lib/` | web app modules: API types and calls, formatting |
+| `web/vite.config.ts` | build, development proxy to the backend, Vitest |
 
 Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` → `departures.rs` → `upstream/mod.rs` → `stops/` → `favorites.rs`.
 
@@ -104,4 +120,4 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-Next: Phase 2, the web app and the first deployment ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)).
+In development: Phase 2, the web app and the first deployment ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)).

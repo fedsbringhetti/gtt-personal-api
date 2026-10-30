@@ -14,6 +14,7 @@ use gtt_personal_api::{
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
     upstream::UpstreamClient,
+    web::WebAssets,
 };
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
@@ -80,6 +81,10 @@ async fn serve(config: Config) -> ExitCode {
     if config.api_token.is_none() {
         tracing::warn!("API_TOKEN is not set: /api/* is open to anyone who can reach the service");
     }
+    let web = WebAssets::dist();
+    if !web.is_built() {
+        tracing::warn!("web app not built: run `npm run build` in web/ (the API works anyway)");
+    }
     let upstream_health = upstream.health();
     let state = AppState {
         departures: Arc::new(DeparturesService::new(
@@ -93,6 +98,7 @@ async fn serve(config: Config) -> ExitCode {
         upstream_health,
         api_token: config.api_token.clone(),
         clock,
+        web,
     };
 
     let listener = match TcpListener::bind(config.bind_addr).await {

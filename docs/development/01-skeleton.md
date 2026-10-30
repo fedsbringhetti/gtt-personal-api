@@ -174,5 +174,6 @@ The last command exits with code 1 and a message naming `BIND_ADDR`.
 - [Step 2](02-departures.md) adds the upstream settings and passes an `AppState` to the router.
 - [Step 3](03-stop-index.md) adds `DATA_DIR`, `STOPS_SYNC_TIME`, `DEFAULT_FEEDS` and a custom parser (`parse_with`).
 - [Step 5](05-robustness.md) adds `API_TOKEN` and splits the router into open and protected routes.
+- [Step 7](07-web-skeleton.md) gives the router a fallback that serves the web app, so an unknown path now gets the page instead of 404 (the test moved to `tests/web.rs`), renames the CI job to `rust` and adds a `frontend` job.
 - [Step 6](06-docker.md) adds the `healthcheck` subcommand to `main`.
 - The docs tooling ([Keeping the docs in sync](README.md#keeping-the-docs-in-sync)) adds a `Docs` step to CI that checks links and code excerpts.

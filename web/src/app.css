@@ -1,0 +1,12 @@
+/* Placeholder styles: the design tokens arrive with the design base step. */
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: max(24px, env(safe-area-inset-top)) 20px 24px;
+}

@@ -67,6 +67,16 @@ async fn health_stays_open() {
 }
 
 #[tokio::test]
+async fn web_app_stays_open() {
+    let app = app_with_token().await;
+
+    for path in ["/", "/fermata/39", "/assets/index-Ab12Cd34.js"] {
+        let (status, _, _) = request(&app, get(path, None)).await;
+        assert_eq!(status, StatusCode::OK, "{path}");
+    }
+}
+
+#[tokio::test]
 async fn no_token_configured_means_open_api() {
     let app = common::test_app("http://127.0.0.1:9/", at(NOW), Duration::from_secs(1))
         .await

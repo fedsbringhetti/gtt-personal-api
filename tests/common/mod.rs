@@ -17,8 +17,10 @@ use gtt_personal_api::{
     stops::{Feeds, StopIndex, sync::sync_once},
     time::{Clock, FixedClock},
     upstream::UpstreamClient,
+    web::WebAssets,
 };
 use http_body_util::BodyExt;
+use rust_embed::RustEmbed;
 use tower::ServiceExt;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -34,11 +36,17 @@ pub struct TestApp {
     pub upstream: UpstreamClient,
 }
 
+/// A tiny stand-in for the built web app: `index.html` and one hashed script.
+#[derive(RustEmbed)]
+#[folder = "tests/fixtures/web"]
+pub struct FixtureWeb;
+
 /// Settings that some tests change.
 #[derive(Debug, Clone)]
 pub struct Options {
     pub cache_ttl: Duration,
     pub api_token: Option<&'static str>,
+    pub web: WebAssets,
 }
 
 impl Default for Options {
@@ -46,6 +54,7 @@ impl Default for Options {
         Self {
             cache_ttl: Duration::from_secs(20),
             api_token: None,
+            web: WebAssets::from_embed::<FixtureWeb>(),
         }
     }
 }
@@ -81,6 +90,7 @@ pub async fn test_app_with(
         upstream_health: upstream.health(),
         api_token: options.api_token.map(|token| token.parse().unwrap()),
         clock,
+        web: options.web,
     });
     TestApp {
         router,
@@ -136,6 +146,16 @@ pub async fn request(
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json = serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
     (status, headers, json)
+}
+
+/// Sends a GET and returns status, headers and the body as text, for non-JSON responses.
+pub async fn get_text(app: &Router, uri: &str) -> (StatusCode, HeaderMap, String) {
+    let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    (status, headers, String::from_utf8(body.to_vec()).unwrap())
 }
 
 /// Sends a request with an optional JSON body; the response body is parsed as JSON

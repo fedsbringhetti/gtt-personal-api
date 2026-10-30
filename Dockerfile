@@ -1,5 +1,15 @@
 # syntax=docker/dockerfile:1
 
+# The web app: plain HTML, CSS and JavaScript, the same on every platform, so this stage runs on
+# the machine doing the build ($BUILDPLATFORM) instead of under arm64 emulation. Dependencies are
+# installed before the sources are copied, so editing a component does not reinstall them.
+FROM --platform=$BUILDPLATFORM node:24-slim AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
 # Build stages share the Rust toolchain and cargo-chef, which caches dependencies in their own
 # layer: changing only our code does not recompile them.
 FROM rust:1.95-slim-bookworm AS chef
@@ -14,6 +24,8 @@ FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
+# rust-embed includes web/dist/ in the release binary, so it must be there before the build.
+COPY --from=web /web/dist web/dist
 RUN cargo build --release --locked
 
 FROM debian:bookworm-slim AS runtime
