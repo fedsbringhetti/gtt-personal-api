@@ -31,7 +31,7 @@ scripts/build-image.sh --push
 
 Equivalent to `docker buildx build --platform linux/arm64 -t federicosbringhetti/gtt-personal-api:<version> -t federicosbringhetti/gtt-personal-api:latest --push .`. Without `--push` the script only builds the image locally, to try it first.
 
-The image is public. `.dockerignore` keeps secrets, local data, tests, docs and Git history out of the build context, and the final image contains only the compiled binary on top of `debian:bookworm-slim`.
+The image is public. `.dockerignore` keeps secrets, local data, tests, docs, Git history and the local `web/node_modules` and `web/dist` out of the build context. The build compiles the web app in a Node stage and embeds it in the binary; the final image contains only that binary on top of `debian:bookworm-slim`.
 
 ## 2. Prepare the server (first time)
 
@@ -106,4 +106,4 @@ To roll back, put the previous tag back and run the same commands.
 - **Logs** go to stdout only (`docker compose logs`); nothing is written to log files.
 - **Remote access**: through the existing Cloudflare Tunnel and Nginx Proxy Manager, protected by Cloudflare Access (decided 2026-10-30, see [PLAN.md](../../PLAN.md)); the setup is part of the Phase 2 plan ([../plan/phase-2.md](../plan/phase-2.md)). Keep `API_TOKEN` set.
 - **Limits**: non-root user, 128 MB memory limit, `restart: unless-stopped`.
-- **Measured** on 2026-10-29 (arm64 under Docker on the Mac): download size about 38 MB (138 MB uncompressed: 108 MB Debian base, 15 MB binary); 32 MB of memory after sync and requests; first sync of 19,422 stops in 1.7 s; restart in 0.14 s.
+- **Measured** on 2026-10-29 (arm64 under Docker on the Mac): download size about 38 MB (138 MB uncompressed: 108 MB Debian base, 15 MB binary); 32 MB of memory after sync and requests; first sync of 19,422 stops in 1.7 s; restart in 0.14 s. With the placeholder web app embedded (2026-10-30): binary 13.5 KB larger, download size unchanged (37.3 MB measured with `docker save | gzip`), 33 MB of memory after the first sync.

@@ -161,3 +161,4 @@ The container should be `healthy` within a few seconds; the service is on `http:
 ## Later changes
 
 - The first real deployment will follow [../user/deploy.md](../user/deploy.md), planned with Phase 2 (web app).
+- [Step 7](07-web-skeleton.md) adds a first stage, `web`, that builds the web app with Node; the builder copies its output before `cargo build`.
