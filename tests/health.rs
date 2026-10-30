@@ -10,10 +10,3 @@ async fn health_returns_ok_and_version() {
     assert_eq!(json["status"], "ok");
     assert_eq!(json["version"], env!("CARGO_PKG_VERSION"));
 }
-
-#[tokio::test]
-async fn unknown_route_returns_not_found() {
-    let (status, _) = common::get(&common::offline_app().await, "/nope").await;
-
-    assert_eq!(status, StatusCode::NOT_FOUND);
-}

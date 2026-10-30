@@ -11,6 +11,7 @@ use crate::{
     stops::{Feeds, StopIndex},
     time::Clock,
     upstream::health::UpstreamHealth,
+    web::{self, WebAssets},
 };
 
 pub mod auth;
@@ -30,6 +31,8 @@ pub struct AppState {
     /// When set, every `/api/*` route requires it as a bearer token.
     pub api_token: Option<auth::ApiToken>,
     pub clock: Arc<dyn Clock>,
+    /// The web app, served for every GET that is not an API route.
+    pub web: WebAssets,
 }
 
 pub fn router(state: AppState) -> Router {
@@ -51,9 +54,12 @@ pub fn router(state: AppState) -> Router {
         api = api.route_layer(middleware::from_fn_with_state(token, auth::require_token));
     }
 
-    // `/health` stays open: the Docker health check has no token.
+    // `/health` stays open: the Docker health check has no token. The web app is open too: it
+    // holds no data, and every API call it makes goes through the check above.
+    let web = state.web;
     Router::new()
         .route("/health", get(health::health))
         .merge(api)
         .with_state(state)
+        .fallback_service(get(web::serve).with_state(web))
 }
