@@ -8,6 +8,8 @@
 /docs
 /scripts
 /tests
+/web/node_modules
+/web/dist
 .env
 .env.*
 *.md
