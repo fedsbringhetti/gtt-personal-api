@@ -20,7 +20,7 @@ Decisions already made are recorded in these files: follow them, and when a choi
 
 - Plan first, then build. Do not write code, project skeletons or configuration files for a phase until the user explicitly says to start.
 - Each phase has a detailed plan in `docs/plan/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
-- Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`.
+- Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`. Use the `docs-sync` skill (`.claude/skills/docs-sync/`) for this: a hook blocks commits and PRs whose code changes have no documentation update.
 
 ## Git
 
@@ -53,4 +53,8 @@ Before every PR:
 
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
+```
+
+```bash
+python3 .claude/skills/docs-sync/scripts/check_docs.py
 ```

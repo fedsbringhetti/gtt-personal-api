@@ -97,7 +97,7 @@ The order of checks on the response matters:
 ```rust
 // GraphQL errors come with HTTP 500, so look at the body before the status.
 match serde_json::from_slice::<GraphQlResponse<T>>(&body) {
-    Ok(response) if !response.errors.is_empty() => Err(UpstreamError::GraphQl(/* messages */)),
+    Ok(response) if !response.errors.is_empty() => Err(UpstreamError::GraphQl(/* ...messages joined with "; " */)),
     _ if !status.is_success() => Err(UpstreamError::Status(status.as_u16())),
     Ok(GraphQlResponse { data: Some(data), .. }) => Ok(data),
     Ok(_) => Err(UpstreamError::InvalidResponse("missing data".to_owned())),

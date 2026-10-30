@@ -175,3 +175,4 @@ The last command exits with code 1 and a message naming `BIND_ADDR`.
 - [Step 3](03-stop-index.md) adds `DATA_DIR`, `STOPS_SYNC_TIME`, `DEFAULT_FEEDS` and a custom parser (`parse_with`).
 - [Step 5](05-robustness.md) adds `API_TOKEN` and splits the router into open and protected routes.
 - [Step 6](06-docker.md) adds the `healthcheck` subcommand to `main`.
+- The docs tooling ([Keeping the docs in sync](README.md#keeping-the-docs-in-sync)) adds a `Docs` step to CI that checks links and code excerpts.

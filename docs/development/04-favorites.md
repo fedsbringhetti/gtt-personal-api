@@ -122,7 +122,11 @@ The body is taken as `Result<Json<...>, JsonRejection>` so malformed JSON, wrong
 Each favorite is returned with its stop:
 
 ```rust
-async fn view(state: &AppState, favorite: Favorite, index_ready: bool) -> Result<FavoriteView, ApiError> {
+async fn view(
+    state: &AppState,
+    favorite: Favorite,
+    index_ready: bool,
+) -> Result<FavoriteView, ApiError> {
     let stop = state.stops.get(&favorite.stop_id).await?;
     Ok(FavoriteView {
         // Before the first sync every stop would look missing.

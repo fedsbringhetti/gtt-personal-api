@@ -32,3 +32,4 @@ docs/
 - Every development step adds a chapter in `development/` in the same PR as the code (template in [development/README.md](development/README.md#writing-a-chapter)).
 - A change visible to users also updates `user/` and, when the design changes, `architecture.md`.
 - Each phase has its plan in `plan/phase-N.md`, written and approved before the phase starts and updated if the plan changes.
+- The `docs-sync` skill, a commit hook and a CI check keep this true: see [development/README.md](development/README.md#keeping-the-docs-in-sync).

@@ -31,7 +31,11 @@ The planning that came before the code is in [../plan/](../plan/phase-1.md); the
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
 
-The same checks run in GitHub Actions (`.github/workflows/ci.yml`) on every PR and on every push to `main`.
+```bash
+python3 .claude/skills/docs-sync/scripts/check_docs.py
+```
+
+The second command checks the documentation: every relative link and anchor, and that the code excerpts in `docs/` still match the code (see [Keeping the docs in sync](#keeping-the-docs-in-sync)). All these checks run in GitHub Actions (`.github/workflows/ci.yml`) on every PR and on every push to `main`.
 
 ### Tests
 
@@ -63,3 +67,29 @@ Every development step adds a chapter here, in the same PR as the code. Name it 
 8. **Later changes**: links to later chapters that changed this code.
 
 When behavior visible to users changes, also update [../user/api.md](../user/api.md), [../user/configuration.md](../user/configuration.md) or [../architecture.md](../architecture.md).
+
+When a chapter excerpt simplifies the real code, put `...` in the shortened line or mark the block as illustrative (```` ```rust illustrative ````), so the excerpt check skips it.
+
+## Keeping the docs in sync
+
+Three pieces work together:
+
+| Piece | Where | What it does |
+|-------|-------|--------------|
+| **docs-sync skill** | `.claude/skills/docs-sync/SKILL.md` | The procedure Claude follows after a code change: find the affected documents, update the reference docs and the development chapter, verify, report. |
+| **Hook** | `.claude/settings.json` | Before `git commit` and `gh pr create`, blocks when code changed on the branch but no documentation did, or when the docs check fails. Add `[skip docs]` to the commit message for a change with no documentation impact. |
+| **CI check** | `.github/workflows/ci.yml` | Runs the docs check on every PR. |
+
+The skill's scripts can also be run by hand:
+
+```bash
+python3 .claude/skills/docs-sync/scripts/docs_impact.py
+```
+
+Lists the code changed on the branch, the documents to review for each change, the chapters that mention the changed files, and the next chapter number.
+
+```bash
+python3 .claude/skills/docs-sync/scripts/check_docs.py
+```
+
+Checks links, anchors and code excerpts; exits with 1 and a list of problems if anything is off.

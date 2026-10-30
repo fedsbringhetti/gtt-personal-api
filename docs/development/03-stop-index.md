@@ -175,7 +175,7 @@ sql.push(" AND (' ' || search_text) LIKE ").push_bind(format!("% {word}%"));
 
 Trigrams need at least 3 characters, so shorter words use `LIKE` on word starts. Then the ranking:
 
-```sql
+```sql illustrative
 ORDER BY CASE
     WHEN code = ? COLLATE NOCASE OR id = ? THEN 0  -- exact code or id
     WHEN search_name = ? THEN 1                    -- exact name
