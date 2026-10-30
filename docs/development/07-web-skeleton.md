@@ -1,6 +1,6 @@
 # 7. Web app skeleton
 
-> Phase 2, step 1 · PR —
+> Phase 2, step 1 · PR [#11](https://github.com/fedsbringhetti/gtt-personal-api/pull/11)
 
 ## Goal
 

@@ -14,7 +14,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 4 | [Favorites](04-favorites.md): ordered favorites, JSON bodies, partial updates | 1 | [#6](https://github.com/fedsbringhetti/gtt-personal-api/pull/6) |
 | 5 | [Robustness](05-robustness.md): retry, stale data, status, optional token | 1 | [#7](https://github.com/fedsbringhetti/gtt-personal-api/pull/7) |
 | 6 | [Docker](06-docker.md): image, health check, compose, deployment files | 1 | [#8](https://github.com/fedsbringhetti/gtt-personal-api/pull/8) |
-| 7 | [Web app skeleton](07-web-skeleton.md): Svelte + Vite project, embedding in the binary, Node stage, frontend CI | 2 | — |
+| 7 | [Web app skeleton](07-web-skeleton.md): Svelte + Vite project, embedding in the binary, Node stage, frontend CI | 2 | [#11](https://github.com/fedsbringhetti/gtt-personal-api/pull/11) |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
