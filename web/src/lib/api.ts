@@ -24,6 +24,12 @@ export interface StopInfo {
   lines: LineRef[]
 }
 
+/** A stop of `GET /api/stops/nearby` (`NearbyStop` in `src/stops/search.rs`). */
+export interface NearbyStop extends StopInfo {
+  /** Straight-line distance in meters. */
+  distance_m: number
+}
+
 export interface Departure {
   line: string
   mode: string | null
@@ -143,6 +149,20 @@ export async function searchStops(query: string, signal?: AbortSignal): Promise<
   const params = new URLSearchParams({ q: query, limit: '20' })
   const response = await get<{ stops: StopInfo[] }>(`/api/stops?${params}`, signal)
   return response.stops
+}
+
+/** Stops within `radius` meters of a point, nearest first. */
+export async function nearbyStops(
+  position: { lat: number; lon: number },
+  radius: number,
+  signal?: AbortSignal,
+): Promise<NearbyStop[]> {
+  const params = new URLSearchParams({
+    lat: String(position.lat),
+    lon: String(position.lon),
+    radius: String(radius),
+  })
+  return (await get<{ stops: NearbyStop[] }>(`/api/stops/nearby?${params}`, signal)).stops
 }
 
 export function getStop(stop: string, signal?: AbortSignal): Promise<StopInfo> {
