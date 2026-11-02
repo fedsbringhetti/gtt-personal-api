@@ -102,7 +102,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - Rule management in the web app
 - Alert when the upstream stops working
 
-**Detailed plan**: [docs/plan/phase-3.md](docs/plan/phase-3.md) (decisions confirmed; to be completed before the phase starts)
+**Detailed plan**: [docs/plan/phase-3.md](docs/plan/phase-3.md) (approved on 2026-11-02)
 
 ---
 
