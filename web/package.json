@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.sw.json",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -20,6 +20,10 @@
     "svelte-check": "^4.7.7",
     "typescript": "~6.0.3",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-window": "^7.4.1"
   }
 }

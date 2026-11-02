@@ -45,6 +45,7 @@ This document defines the phases. The detailed plan for each phase is written to
 | 10 | Real-time source | OpenTripPlanner / GTT GTFS Realtime | GTT's own feed for urban runs, since GTT produces the data; then OpenTripPlanner's real time; then the scheduled time. OpenTripPlanner stays the source of stops and of which runs serve a stop, for every company. If GTT's predictions turn out clearly wrong, OpenTripPlanner goes back first (decided 2026-11-02) |
 | 11 | GTFS static | full import / partial / none | Only `stops.txt` (GTT `stop_id` ↔ stop code) and `routes.txt` (official line colors), downloaded weekly; no timetables (decided 2026-11-02) |
 | 12 | Testing on real phones | local HTTPS / temporary tunnel / at deployment | At deployment (Phase 4). Until then the service is tested on the Mac (browser and iOS Simulator), where `localhost` counts as secure for location, service worker and Web Push (decided 2026-11-02) |
+| 13 | Name and icon of the app | GTT / a name of our own | **InTime** (provisional, may change), not the company's brand; icon: a white train in profile with a dish on its roof sending radio waves, on red (decided 2026-11-02) |
 
 ## Workflow
 
@@ -143,6 +144,16 @@ A map in the web app with the vehicles of a line or near a stop, moving in real 
 - **Limits**: urban network only; about a quarter of the vehicles have no run assigned; a few positions are minutes old and must be hidden or marked.
 
 Replaces the earlier idea of reading positions from the 5T MQTT broker at `wss://mapi.5t.torino.it/scre` (found on 2026-10-29 through InfomezziMap), dropped on 2026-11-02: it needs the `Origin` of muoversiatorino.it, while GTT publishes the same data openly.
+
+### Lighter requests
+
+Fewer bytes between the phone and the server, which matters on a weak mobile connection. Proposed on 2026-11-02.
+
+- **Today** (measured on 2026-11-02): the stop screen downloads its departures every 30 seconds, 7.5 KB each time for 30 rows (about 900 KB per hour with the screen open); a search is 6.7 KB. Nothing is compressed and there is no `ETag`. The app's own files are not downloaded again: from Phase 2 the service worker keeps them on the phone, so only API data travels.
+- **Compression** (`gzip`/`br` with `tower-http`'s compression layer): the same departures become about 1 KB. The cheapest change and the largest gain.
+- **Only what changed**: an `ETag` per response with `304 Not Modified` when nothing changed; it pays off only if the response does not change every minute, so `minutes` would be computed in the app from `expected`. A further step would send only the departures that changed since the last response (a delta).
+- **Push instead of polling**: the server sends updates when they happen (Server-Sent Events or WebSocket) instead of the app asking every 30 seconds; it fits trip tracking in Phase 3.
+- To decide with measurements on a real phone after the first deployment (Phase 4).
 
 ### Full GTFS import
 

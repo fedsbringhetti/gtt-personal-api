@@ -10,7 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
-- **a web app** for the phone, served by the same binary (Phase 2, in development: all six screens; installable app, offline and info screen to come).
+- **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2, in development: the info screen is still to come).
 
 It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
@@ -48,6 +48,7 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 - **Screens**: `App.svelte` shows one screen per path (`/`, `/cerca`, `/fermata/39`, `/vicino`, `/preferiti`, `/info`) with a bottom bar. The app's own router (`web/src/lib/router.ts`) reads the path; a listener on the document turns clicks on the app's links into screen changes without page loads, using the browser history. `/prova-grafica` shows the design base, in development builds only.
 - **Data**: `web/src/lib/api.ts` calls the API with types that mirror the Rust structs and turns failures into one `ApiError`; screens abort calls they no longer need. The stop screen reloads departures every 30 seconds only while the page is visible (`poll.ts`) and filters lines on the data it has (`?linee=` in the address). Names arrive in capitals and are shown as titles (`format.ts`). The near-me screen asks the browser for the position only when it opens, sends it only in that one search and keeps it nowhere (not in the address, not in storage; the server does not log requests).
 - **Look**: design tokens are CSS variables in `web/src/app.css`, with a second set for the phone's dark theme; components use only the variables. Shared pieces (line badge, departure row, loaders, icons) are in `web/src/lib/components/`.
+- **Installable and offline**: a web manifest and a service worker (`web/src/sw.ts`, built by `vite-plugin-pwa`). The service worker keeps the app's files on the phone and answers every screen with the cached `index.html`, so the app opens without network; it never touches `/api/`. Screens keep their last data in `localStorage` (`lastData.ts`) and show them with a "Sei offline" banner when the server cannot be reached. A new version is downloaded in the background and offered with "Aggiorna" (`update.svelte.ts`). The server sends `sw.js` and the manifest with `no-cache`, like every file outside `assets/`.
 - **Access**: the web app is not behind the token; it holds no data, and its API calls are checked like any other.
 - **Development**: `npm run dev` in `web/` serves the app on port 5173 with instant reloads and forwards `/api` to `cargo run` on 8080.
 
@@ -117,6 +118,9 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `web/src/lib/format.ts`, `poll.ts`, `departures.ts` | times, names and matches; reloading while visible; line filters |
 | `web/src/lib/favorites.ts` | the favorite behind the star on a stop |
 | `web/src/lib/location.ts` | the phone's position, asked to the browser, with Italian errors |
+| `web/src/sw.ts`, `web/src/lib/update.svelte.ts` | service worker; new versions and "Aggiorna" |
+| `web/src/lib/lastData.ts` | last favorites and departures, for offline use |
+| `web/public/`, `web/pwa-assets.config.ts` | icon source and generated PNG icons |
 | `web/src/lib/` | other web app modules: status, line types and delays, bottom bar entries |
 | `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
 | `web/src/screens/` | one component per screen, plus the development-only design page |

@@ -40,6 +40,21 @@ async fn app_paths_serve_the_page() {
 }
 
 #[tokio::test]
+async fn service_worker_and_manifest_are_never_cached() {
+    // A cached service worker would keep the phone on an old version of the app.
+    let app = offline_app().await;
+    for (path, content_type) in [
+        ("/sw.js", "text/javascript"),
+        ("/manifest.webmanifest", "application/manifest+json"),
+    ] {
+        let (status, headers, _) = get_text(&app, path).await;
+        assert_eq!(status, StatusCode::OK, "{path}");
+        assert_eq!(headers[header::CONTENT_TYPE], content_type, "{path}");
+        assert_eq!(headers[header::CACHE_CONTROL], "no-cache", "{path}");
+    }
+}
+
+#[tokio::test]
 async fn hashed_files_are_cached_for_a_year() {
     let (status, headers, body) = get_text(&offline_app().await, "/assets/index-Ab12Cd34.js").await;
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import TabBar from './lib/components/TabBar.svelte'
+  import UpdateBanner from './lib/components/UpdateBanner.svelte'
   import { navigation, startNavigation } from './lib/navigation.svelte'
   import Favorites from './screens/Favorites.svelte'
   import Home from './screens/Home.svelte'
@@ -38,6 +39,7 @@
     <NotFound />
   {/if}
 </main>
+<UpdateBanner />
 <TabBar />
 
 <style>

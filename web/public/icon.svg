@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- InTime: a train in profile talking through a dish on its roof. Approved 2026-11-02 (variant A). -->
+  <rect width="1024" height="1024" fill="#D62828"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round">
+    <path d="M552 211 A70 70 0 0 1 609 268"/>
+    <path d="M563 152 A130 130 0 0 1 668 257"/>
+    <path d="M573 93 A190 190 0 0 1 727 247"/>
+  </g>
+  <rect x="448" y="392" width="28" height="92" rx="10" fill="#FFFFFF"/>
+  <ellipse cx="470" cy="352" rx="100" ry="38" transform="rotate(-45 470 352)" fill="#FFFFFF"/>
+  <line x1="470" y1="352" x2="528" y2="294" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M150 500 Q150 470 180 470 H690 C790 470 870 545 895 660 Q900 700 870 700 H180 Q150 700 150 670 Z" fill="#FFFFFF"/>
+  <g fill="#D62828">
+    <rect x="200" y="515" width="90" height="70" rx="18"/>
+    <rect x="310" y="515" width="90" height="70" rx="18"/>
+    <rect x="420" y="515" width="90" height="70" rx="18"/>
+    <rect x="530" y="515" width="90" height="70" rx="18"/>
+    <path d="M650 515 H700 C760 515 805 550 825 585 H650 Z"/>
+    <rect x="150" y="630" width="735" height="18"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="240" cy="735" r="30"/>
+    <circle cx="320" cy="735" r="30"/>
+    <circle cx="700" cy="735" r="30"/>
+    <circle cx="780" cy="735" r="30"/>
+    <rect x="110" y="785" width="800" height="22" rx="11"/>
+  </g>
+</svg>

@@ -10,6 +10,7 @@ import {
   searchStops,
   stopParam,
   stopParamFromId,
+  isUnreachable,
   updateFavorite,
 } from './api'
 
@@ -100,6 +101,20 @@ describe('stopParam', () => {
     expect(stopParam({ id: '2:S00219', feed: '2', code: 'S00219' })).toBe('2:S00219')
     expect(stopParamFromId('gtt:39')).toBe('39')
     expect(stopParamFromId('2:S00219')).toBe('2:S00219')
+  })
+})
+
+describe('isUnreachable', () => {
+  it('is true without network or behind a failing proxy', () => {
+    expect(isUnreachable(new ApiError(0, 'network', ''))).toBe(true)
+    expect(isUnreachable(new ApiError(502, 'http_error', ''))).toBe(true)
+    expect(isUnreachable(new ApiError(504, 'http_error', ''))).toBe(true)
+  })
+
+  it('is false when the server itself answered', () => {
+    expect(isUnreachable(new ApiError(502, 'upstream_error', ''))).toBe(false)
+    expect(isUnreachable(new ApiError(500, 'http_error', ''))).toBe(false)
+    expect(isUnreachable(new Error('boom'))).toBe(false)
   })
 })
 
