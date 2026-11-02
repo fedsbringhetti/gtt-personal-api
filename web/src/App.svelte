@@ -23,7 +23,7 @@
   {:else if navigation.route.name === 'search'}
     <Search query={navigation.route.query} />
   {:else if navigation.route.name === 'stop'}
-    <Stop stop={navigation.route.stop} />
+    <Stop stop={navigation.route.stop} lines={navigation.route.lines} />
   {:else if navigation.route.name === 'near'}
     <Near />
   {:else if navigation.route.name === 'favorites'}
