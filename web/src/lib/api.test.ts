@@ -1,10 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, errorText, getDepartures, getStop, searchStops, stopParam } from './api'
+import {
+  ApiError,
+  addFavorite,
+  errorText,
+  getDepartures,
+  getStop,
+  removeFavorite,
+  searchStops,
+  stopParam,
+  stopParamFromId,
+  updateFavorite,
+} from './api'
 
 function respond(status: number, body: unknown) {
-  const fetch = vi.fn().mockResolvedValue(
-    new Response(typeof body === 'string' ? body : JSON.stringify(body), { status }),
-  )
+  // A 204 response must have no body at all, not even an empty one.
+  const text = status === 204 ? null : typeof body === 'string' ? body : JSON.stringify(body)
+  const fetch = vi.fn().mockResolvedValue(new Response(text, { status }))
   vi.stubGlobal('fetch', fetch)
   return fetch
 }
@@ -24,6 +35,28 @@ describe('requests', () => {
     const fetch = respond(200, { departures: [] })
     await getDepartures('2:S00219')
     expect(fetch.mock.calls[0][0]).toBe('/api/stops/2%3AS00219/departures?minutes=60&limit=30')
+  })
+})
+
+describe('favorites', () => {
+  it('sends changes as JSON', async () => {
+    const fetch = respond(201, { id: 1 })
+    await addFavorite('39', ['4', '15'])
+    const [path, init] = fetch.mock.calls[0]
+    expect(path).toBe('/api/favorites')
+    expect(init).toMatchObject({ method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    expect(JSON.parse(init.body)).toEqual({ stop: '39', lines: ['4', '15'] })
+  })
+
+  it('sends null to clear a label', async () => {
+    const fetch = respond(200, { id: 1 })
+    await updateFavorite(1, { label: null })
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'PATCH', body: '{"label":null}' })
+  })
+
+  it('accepts an empty answer to a delete', async () => {
+    respond(204, '')
+    await expect(removeFavorite(1)).resolves.toBeUndefined()
   })
 })
 
@@ -58,6 +91,8 @@ describe('stopParam', () => {
   it('uses the bare code for GTT and the full id otherwise', () => {
     expect(stopParam({ id: 'gtt:39', feed: 'gtt', code: '39' })).toBe('39')
     expect(stopParam({ id: '2:S00219', feed: '2', code: 'S00219' })).toBe('2:S00219')
+    expect(stopParamFromId('gtt:39')).toBe('39')
+    expect(stopParamFromId('2:S00219')).toBe('2:S00219')
   })
 })
 
