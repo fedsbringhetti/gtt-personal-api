@@ -10,7 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
-- **a web app** for the phone, served by the same binary (Phase 2, in development: search and stop screens so far).
+- **a web app** for the phone, served by the same binary (Phase 2, in development: Home, search, stop and favorites screens so far).
 
 It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
@@ -74,6 +74,8 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 
 Stored in SQLite with a 0-based `position` kept contiguous: inserts go at the end, moves shift the others, deletes close the gap, each in a transaction. A favorite stores only the stop id; its details are read from the index at every request, so a stop removed by a sync shows up as `missing` instead of disappearing.
 
+`GET /api/favorites/departures` returns every favorite with its next departures, for the web app's Home screen. The stops are read in parallel (one Tokio task each, through the departures cache, so two favorites of one stop make one upstream call); a stop that fails gives that favorite an `error` and leaves the others alone.
+
 ### Robustness
 
 - **Retry**: one retry after 300 ms on connection errors and HTTP 502–504. Not on timeouts (they already took the whole timeout), GraphQL errors or invalid responses (retrying would give the same result). GraphQL errors arrive with HTTP 500, so the body is checked before the status.
@@ -103,7 +105,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/favorites.rs` | favorites storage and ordering |
 | `src/api/mod.rs` | router, shared `AppState`, token layer |
 | `src/api/stops.rs` | search, nearby, details and departures handlers |
-| `src/api/favorites.rs` | favorites handlers and input cleaning |
+| `src/api/favorites.rs` | favorites handlers and input cleaning; favorites with their departures |
 | `src/api/status.rs`, `health.rs` | `/api/status`, `/health` |
 | `src/api/auth.rs` | `API_TOKEN` middleware |
 | `src/api/error.rs` | error codes and JSON error responses |
@@ -113,6 +115,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `web/src/lib/router.ts`, `navigation.svelte.ts` | paths ↔ screens; current route, history, link clicks |
 | `web/src/lib/api.ts` | API types and calls, errors and their Italian messages |
 | `web/src/lib/format.ts`, `poll.ts`, `departures.ts` | times, names and matches; reloading while visible; line filters |
+| `web/src/lib/favorites.ts` | the favorite behind the star on a stop |
 | `web/src/lib/` | other web app modules: status, line types and delays, bottom bar entries |
 | `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
 | `web/src/screens/` | one component per screen, plus the development-only design page |

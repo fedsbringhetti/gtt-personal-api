@@ -62,11 +62,11 @@ Navigation: a bar at the bottom with four entries (Home, Cerca, Vicino, Preferit
 
 | Screen | Path | Content | API |
 |--------|------|---------|-----|
-| Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 2–3 departures each | `/api/favorites/departures` (new, section 5) |
+| Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 3 departures each, refreshed every 30 seconds; a card opens its stop with the favorite's lines | `/api/favorites/departures` (new, section 5) |
 | Search | `/cerca?q=` | results while typing (after 250 ms of pause): name, code, lines, matching words in bold | `/api/stops?q=` |
 | Stop | `/fermata/{stop}?linee=` | name, code, lines as filter chips (several at once, kept in the address), star to save it, live departures of the next 60 minutes (at most 30): line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes, canceled runs struck through as "soppressa" | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
 | Near me | `/vicino` | after the location permission: stops by distance, with lines | `/api/stops/nearby` |
-| Favorites | `/preferiti` | rename, choose lines, move up/down, remove | `/api/favorites` |
+| Favorites | `/preferiti` | rename (saved on leaving the field), choose lines, move up/down, remove with a second tap to confirm; each change saved at once | `/api/favorites` |
 | Info | `/info` | version, upstream status, last stop update, how to install on the Home Screen | `/api/status` |
 
 Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, notification settings.
@@ -74,7 +74,8 @@ Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, noti
 ## 5. Backend changes
 
 - **Static files and fallback** (section 3).
-- **`GET /api/favorites/departures?limit=3`**: the favorites with their next departures in one call, so the home screen makes one request instead of one per favorite. Uses the departures cache; a favorite whose departures fail is returned with an error flag instead of failing the whole response.
+- **`GET /api/favorites/departures?limit=3`**: the favorites with their next departures in one call, so the home screen makes one request instead of one per favorite. Stops are fetched in parallel through the departures cache; a favorite whose departures fail is returned with an `error` instead of failing the whole response.
+- **The star on a stop** saves the stop with the lines on screen (`?linee=`); it is full when a favorite has that stop with exactly those lines, so one stop can have several favorites ("Casa, solo 4").
 
 ## 6. Look and feel (decision O)
 
