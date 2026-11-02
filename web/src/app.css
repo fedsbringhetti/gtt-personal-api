@@ -1,12 +1,138 @@
-/* Placeholder styles: the design tokens arrive with the design base step. */
+/*
+ * Design tokens (docs/plan/phase-2.md, section 6). Components use only these variables,
+ * so the dark theme is just a second set of values.
+ */
 :root {
   color-scheme: light dark;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
+
+  /* Neutrals */
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --fill: #e6e6eb;
+  --text: #1c1c1e;
+  --text-2: #636366;
+  --separator: #e5e5ea;
+  --skeleton: #e5e5ea;
+
+  /* Accent and states */
+  --accent: #0e7490;
+  --on-time: #15803d;
+  --late: #b45309;
+  --very-late: #b91c1c;
+  --early: var(--accent);
+  --danger: #b91c1c;
+  --favorite: #d97706;
+  --warning-bg: #fef3c7;
+  --warning: #92400e;
+
+  /* Vehicle types: badge backgrounds, always with white text */
+  --bus: #1d4ed8;
+  --tram: #c2410c;
+  --metro: #b91c1c;
+  --rail: #15803d;
+  --other: #4b5563;
+
+  /* Type */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif;
+  --size-title: 34px;
+  --size-section: 22px;
+  --size-body: 17px;
+  --size-secondary: 15px;
+  --size-caption: 13px;
+
+  /* Space and shape */
+  --gutter: 16px;
+  --radius-card: 16px;
+  --radius-field: 12px;
+  --radius-badge: 7px;
+  --touch: 44px;
+  --tab-bar-height: 49px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --fill: #2c2c2e;
+    --text: #f2f2f7;
+    --text-2: #aeaeb2;
+    --separator: #38383a;
+    --skeleton: #3a3a3c;
+
+    --accent: #4fc3dc;
+    --on-time: #4ade80;
+    --late: #fbbf24;
+    --very-late: #f87171;
+    --danger: #f87171;
+    --favorite: #fbbf24;
+    --warning-bg: #3a2a08;
+    --warning: #fbbf24;
+  }
+}
+
+html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
-  padding: max(24px, env(safe-area-inset-top)) 20px 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--size-body);
+  line-height: 1.35;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* 16 px or more, or iOS zooms the page when a field gets focus. */
+input {
+  font-size: var(--size-body);
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A rounded white group on the gray background: lists of departures, stops, settings. */
+.card {
+  margin: 0;
+  padding: 0 var(--gutter);
+  list-style: none;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+}
+
+/* For text only screen readers should read, e.g. the label of a search field. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
