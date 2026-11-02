@@ -1,6 +1,6 @@
 # 8. Design base
 
-> Phase 2, step 2 · PR to be opened
+> Phase 2, step 2 · PR [#13](https://github.com/fedsbringhetti/gtt-personal-api/pull/13)
 
 ## Goal
 
