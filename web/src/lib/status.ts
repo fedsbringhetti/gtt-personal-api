@@ -1,30 +1,43 @@
-/** Response of `GET /api/status` (see docs/user/api.md). Times are ISO 8601 strings. */
-export interface Status {
-  version: string
-  time: string
-  upstream: {
-    ok: boolean | null
-    last_success: string | null
-    last_failure: string | null
-    last_error: string | null
-    consecutive_failures: number
-  }
-  stop_index: { synced_at: string; count: number } | null
+/** What the info screen says about the server, from `GET /api/status`. */
+import type { Status } from './api'
+import { formatDayTime } from './format'
+
+export interface Line {
+  /** Short, in the row: "Funzionano". */
+  value: string
+  /** Under it: "ultimo contatto oggi alle 15:40". */
+  detail: string | null
+  tone: 'ok' | 'problem' | 'neutral'
 }
 
-export async function fetchStatus(): Promise<Status> {
-  const response = await fetch('/api/status')
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+/** The real-time data: whether the upstream answers. */
+export function describeUpstream(status: Status, now?: Date): Line {
+  const { ok, last_success, last_failure } = status.upstream
+  if (ok === null) return { value: 'Nessun contatto ancora', detail: null, tone: 'neutral' }
+  if (ok) {
+    return {
+      value: 'Funzionano',
+      detail: last_success ? `ultimo contatto ${formatDayTime(last_success, now, true)}` : null,
+      tone: 'ok',
+    }
   }
-  return response.json()
+  return {
+    value: 'Non rispondono',
+    detail: last_failure ? `ultimo errore ${formatDayTime(last_failure, now, true)}` : null,
+    tone: 'problem',
+  }
 }
 
-/** One line for the placeholder page, e.g. "Server 0.1.0 · 7.058 fermate". */
-export function describeStatus(status: Status): string {
-  const stops = status.stop_index
-    ? // Italian rules group only from five digits ("7058"): force "7.058" for a steady layout.
-      `${status.stop_index.count.toLocaleString('it-IT', { useGrouping: 'always' })} fermate`
-    : 'fermate non ancora scaricate'
-  return `Server ${status.version} · ${stops}`
+/** The local list of stops used by search and near me. */
+export function describeStopIndex(status: Status, now?: Date): Line {
+  if (!status.stop_index) {
+    return { value: 'Non ancora scaricato', detail: 'si scarica alla prima accensione', tone: 'problem' }
+  }
+  // Italian rules group only from five digits ("7058"): force "7.058" for a steady layout.
+  const count = status.stop_index.count.toLocaleString('it-IT', { useGrouping: 'always' })
+  return {
+    value: `${count} fermate`,
+    detail: `aggiornato ${formatDayTime(status.stop_index.synced_at, now)}`,
+    tone: 'neutral',
+  }
 }
