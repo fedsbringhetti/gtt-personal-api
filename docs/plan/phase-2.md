@@ -30,7 +30,7 @@ Checked on the Mac (browser at phone size and iOS Simulator), where `localhost` 
 | — | Order, phones, language | From `PLAN.md` (decisions 7, 8, 9, 12): web app before rules; iPhone and Android, designed for iPhone's stricter rules; Italian; real phones checked at deployment, in Phase 4 |
 | — | Serving | The same binary serves the web app and the API: one container, one origin |
 | N | Frontend technology | **Svelte** with **Vite**, compiled to static files that the Rust binary embeds. TypeScript, so API responses have types. Plain Svelte, not SvelteKit: no server rendering is needed and a small router of our own covers six screens (decided 2026-10-30). **Node 24 LTS** everywhere: local, Docker, CI |
-| O | Look and feel | Clean, iOS-like (system font, generous spacing, rounded cards, light/dark following the phone), with a **transport character**: line badges colored by vehicle type, departure-board rows, loading indicators with a moving bus or tram. To be refined during development |
+| O | Look and feel | Clean, iOS-like (system font, generous spacing, rounded cards, light/dark following the phone), with a **transport character**: line badges colored by vehicle type, departure-board rows, loading indicators with a moving bus or tram. Screens mocked up and approved on 2026-11-02 ([design canvas](https://claude.ai/artifact/GEpFZXDq4dVt5SzF1p4NZP), private); details in section 6 |
 | P | Screens | Home, search, stop, near me (list, no map), favorites, info (section 4) |
 | Q | Position | Asked only when tapping "vicino a me"; used for that search only, never stored |
 | R | Offline | The app shell opens without network; the last loaded favorites and departures stay visible with "dati delle HH:MM, sei offline"; no offline search |
@@ -56,6 +56,8 @@ browser ──▶ :8080 (cargo run) or :8100 (container)
 
 All text in Italian. Departures refresh every 30 seconds while the screen is visible and stop when the app is in the background.
 
+Navigation: a bar at the bottom with four entries (Home, Cerca, Vicino, Preferiti); Info is reached from an icon at the top of Home; the stop and info screens have a back link.
+
 | Screen | Path | Content | API |
 |--------|------|---------|-----|
 | Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 2–3 departures each | `/api/favorites/departures` (new, section 5) |
@@ -74,12 +76,19 @@ Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, noti
 
 ## 6. Look and feel (decision O)
 
+Approved on 2026-11-02 from mockups of every screen, in light and dark, plus the offline and loading states.
+
 - **Design tokens** as CSS variables: colors, spacing, radius, font sizes; one set for light, one for dark, chosen by the phone's setting.
-- **Line badges**: colored by vehicle type (tram, bus, metro, rail), the line name in bold.
-- **Departure rows** in the style of a departure board: line, destination, minutes aligned and large.
-- **Loading**: a small bus or tram moving along a dotted line, instead of a generic spinner; skeleton rows while departures load.
+- **Colors**: iOS-like neutrals (background `#F2F2F7` / `#000000`, surfaces `#FFFFFF` / `#1C1C1E`, secondary text `#636366` / `#AEAEB2`); accent dark teal `#0E7490` (`#4FC3DC` in dark), chosen not to be confused with the bus blue. Text contrast at least 4.5:1.
+- **Font**: the system font; sizes 34 (title), 22 (section), 17 (body), 15 (secondary), 13 (captions); minutes with fixed-width digits.
+- **Line badges**: colored by vehicle type, the line name in white bold: bus `#1D4ED8`, tram `#C2410C`, metro `#B91C1C`, rail `#15803D`. Official line colors replace them in Phase 3 (`routes.txt`).
+- **Departure rows** in the style of a departure board: badge, destination, expected time on a second line, minutes large on the right; "in arrivo" instead of 0 minutes.
+- **Times and delays**: a real-time icon next to the time when the data is real time; none, and "orario programmato", when it is not. Delay in amber from 1 to 4 minutes (`+2`), red from 5 (`+6`), accent when early (`−1`), green "in orario".
+- **Offline**: a banner "Sei offline · dati delle HH:MM"; departures show their clock time ("alle 08:03") instead of minutes, since a countdown on old data would mislead.
+- **Loading**: a small bus moving along a dotted line, instead of a generic spinner; skeleton rows while departures load; both still when the phone asks for reduced motion.
 - **Touch**: targets of at least 44 px, safe areas of the iPhone respected, no zoom on inputs.
-- Kept deliberately simple so it can be changed later; the first screens are reviewed together before moving on.
+- **Icons**: inline SVG drawn with strokes, no icon library.
+- Kept deliberately simple so it can be changed later.
 
 ## 7. Installable app (PWA) and offline (decision R)
 
@@ -106,7 +115,7 @@ Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, noti
 Each step in its own branch with a PR to `main` and its chapter in `docs/development/`. When all steps are complete, `v0.2.0` is released (Docker image published, not deployed).
 
 1. **Frontend skeleton**: `web/` with Svelte, Vite and TypeScript; embedding and fallback in the binary; Node stage in the Dockerfile; CI job. Check: a placeholder page served by `cargo run` and by the container.
-2. **Design base**: tokens, light/dark, layout and navigation, line badges, transport loaders. Reviewed together before going on.
+2. **Design base**: tokens, light/dark, router, layout and bottom bar, line badges, times and delays, loaders, icons; a page showing them all, in development builds only. Checked against the approved mockups.
 3. **Search and stop**: search screen, stop screen with live departures and line filters.
 4. **Home and favorites**: `/api/favorites/departures`, home cards, favorites management, star on the stop screen.
 5. **Near me**: location permission and nearby list.

@@ -10,7 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
-- **a web app** for the phone, served by the same binary (Phase 2, in development: for now a placeholder page).
+- **a web app** for the phone, served by the same binary (Phase 2, in development: navigation, design base and empty screens so far).
 
 It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
@@ -45,6 +45,8 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 - **Embedding**: `src/web.rs` uses `rust-embed`. Release builds (and so the Docker image) include `web/dist/` in the binary; debug builds read it from disk at every request, so `npm run build` is enough to see a change with `cargo run`. Without `web/dist/` the binary still builds and runs, with the API only, and logs a warning.
 - **Paths**: an existing file is served as is; `/api/*` and missing files under `/assets/` are 404; any other path gets `index.html`, and the app shows the screen for that path (`/fermata/39`).
 - **Cache**: files under `assets/` are cached by the browser for a year (`immutable`: a new build gives them new names); everything else is `no-cache`, so a new version is picked up at the next load.
+- **Screens**: `App.svelte` shows one screen per path (`/`, `/cerca`, `/fermata/39`, `/vicino`, `/preferiti`, `/info`) with a bottom bar. The app's own router (`web/src/lib/router.ts`) reads the path; a listener on the document turns clicks on the app's links into screen changes without page loads, using the browser history. `/prova-grafica` shows the design base, in development builds only.
+- **Look**: design tokens are CSS variables in `web/src/app.css`, with a second set for the phone's dark theme; components use only the variables. Shared pieces (line badge, departure row, loaders, icons) are in `web/src/lib/components/`.
 - **Access**: the web app is not behind the token; it holds no data, and its API calls are checked like any other.
 - **Development**: `npm run dev` in `web/` serves the app on port 5173 with instant reloads and forwards `/api` to `cargo run` on 8080.
 
@@ -105,8 +107,12 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/api/auth.rs` | `API_TOKEN` middleware |
 | `src/api/error.rs` | error codes and JSON error responses |
 | `src/web.rs` | embedded web app: file lookup, fallback to `index.html`, cache headers |
-| `web/src/main.ts`, `App.svelte` | web app entry point and root component |
-| `web/src/lib/` | web app modules: API types and calls, formatting |
+| `web/src/main.ts`, `App.svelte` | web app entry point; one screen per route, bottom bar |
+| `web/src/app.css` | design tokens (light and dark) and base styles |
+| `web/src/lib/router.ts`, `navigation.svelte.ts` | paths ↔ screens; current route, history, link clicks |
+| `web/src/lib/` | other web app modules: API types and calls, line types and delays, bottom bar entries |
+| `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
+| `web/src/screens/` | one component per screen, plus the development-only design page |
 | `web/vite.config.ts` | build, development proxy to the backend, Vitest |
 
 Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` → `departures.rs` → `upstream/mod.rs` → `stops/` → `favorites.rs`.

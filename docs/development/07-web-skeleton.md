@@ -77,30 +77,27 @@ In development the interface is on port 5173 and the API on 8080 (`cargo run`). 
 
 ### The placeholder page
 
-`App.svelte` calls `/api/status` once and shows the result:
+`App.svelte` called `/api/status` once and showed the result. Since the design base ([chapter 8](08-design-base.md)) `App.svelte` chooses the screen, and this code lives in the info screen, `web/src/screens/Info.svelte`:
 
 ```svelte
 <script lang="ts">
-  import { describeStatus, fetchStatus } from './lib/status'
+  import ScreenHeader from '../lib/components/ScreenHeader.svelte'
+  import { describeStatus, fetchStatus } from '../lib/status'
 
-  // Started once when the component is created; the `{#await}` block below follows it.
+  // Started once when the screen is created; the `{#await}` block below follows it.
   const status = fetchStatus()
 </script>
 
-<main>
-  <h1>GTT</h1>
-  <p>La web app è in costruzione.</p>
-
-  <p class="status">
-    {#await status}
-      Controllo il server…
-    {:then value}
-      {describeStatus(value)}
-    {:catch error}
-      Server non raggiungibile ({error.message})
-    {/await}
-  </p>
-</main>
+<ScreenHeader title="Info" back />
+<p class="card">
+  {#await status}
+    Controllo il server…
+  {:then value}
+    {describeStatus(value)}
+  {:catch error}
+    Server non raggiungibile ({error.message})
+  {/await}
+</p>
 ```
 
 > **Frontend concept: a Svelte component.** One file holds the logic (`<script>`), the markup and the styles (`<style>`). Styles apply only to the component's own elements: Svelte adds a unique class to them. `{#await}` shows one of three states of a *Promise* (a value that arrives later): waiting, `{:then}` with the result, `{:catch}` with the error.
@@ -310,4 +307,4 @@ Measured on 2026-10-30: full build about 1 minute (the Node stage runs in parall
 
 ## Later changes
 
-None yet.
+- [Chapter 8](08-design-base.md): `App.svelte` now shows one screen per path; the status line moved to the info screen; `app.css` holds the design tokens.
