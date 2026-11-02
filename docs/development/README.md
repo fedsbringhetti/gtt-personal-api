@@ -20,7 +20,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 10 | [Home and favorites](10-home-and-favorites.md): favorites with departures in one call, Home cards, the star, managing favorites | 2 | [#15](https://github.com/fedsbringhetti/gtt-personal-api/pull/15) |
 | 11 | [Near me](11-near-me.md): the phone's position, nearby stops, a wider radius, denied permission | 2 | [#16](https://github.com/fedsbringhetti/gtt-personal-api/pull/16) |
 | 12 | [Installable and offline](12-pwa-offline.md): InTime's icon and manifest, service worker, last data offline, new version prompt | 2 | [#17](https://github.com/fedsbringhetti/gtt-personal-api/pull/17) |
-| 13 | [Info screen](13-info-screen.md): version, real-time health, stop list, installing InTime | 2 | to be opened |
+| 13 | [Info screen](13-info-screen.md): version, real-time health, stop list, installing InTime | 2 | [#18](https://github.com/fedsbringhetti/gtt-personal-api/pull/18) |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
