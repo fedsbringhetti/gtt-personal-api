@@ -67,7 +67,7 @@ Navigation: a bar at the bottom with four entries (Home, Cerca, Vicino, Preferit
 | Stop | `/fermata/{stop}?linee=` | name, code, lines as filter chips (several at once, kept in the address), star to save it, live departures of the next 60 minutes (at most 30): line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes, canceled runs struck through as "soppressa" | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
 | Near me | `/vicino` | the position is asked when the screen opens (the tap on "Vicino" or "vicino a me"); stops within 500 m by distance, with lines, or within 1.5 km when there are none; "Aggiorna" asks again; help to re-enable a denied permission | `/api/stops/nearby` |
 | Favorites | `/preferiti` | rename (saved on leaving the field), choose lines, move up/down, remove with a second tap to confirm; each change saved at once | `/api/favorites` |
-| Info | `/info` | version, upstream status, last stop update, how to install on the Home Screen | `/api/status` |
+| Info | `/info` | version, real-time status ("Funzionano · ultimo contatto 15:40"), last stop update ("oggi", "ieri" or the date), how to install on the Home Screen, or "installata" when opened as the installed app | `/api/status` |
 
 Phase 3 will add: "avvisami" on a departure, the live tracking page, rules, notification settings.
 

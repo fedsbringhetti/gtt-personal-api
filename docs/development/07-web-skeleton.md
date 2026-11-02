@@ -77,32 +77,35 @@ In development the interface is on port 5173 and the API on 8080 (`cargo run`). 
 
 ### The placeholder page
 
-`App.svelte` called `/api/status` once and showed the result. Since the design base ([chapter 8](08-design-base.md)) `App.svelte` chooses the screen, and this code lives in the info screen, `web/src/screens/Info.svelte`:
+`App.svelte` called `/api/status` once and showed the result. This is the code as it was in this step: since the design base ([chapter 8](08-design-base.md)) `App.svelte` chooses the screen, and the info screen ([chapter 13](13-info-screen.md)) shows the status in full.
 
-```svelte
+```svelte illustrative
 <script lang="ts">
-  import ScreenHeader from '../lib/components/ScreenHeader.svelte'
-  import { describeStatus, fetchStatus } from '../lib/status'
+  import { describeStatus, fetchStatus } from './lib/status'
 
-  // Started once when the screen is created; the `{#await}` block below follows it.
+  // Started once when the component is created; the `{#await}` block below follows it.
   const status = fetchStatus()
 </script>
 
-<ScreenHeader title="Info" back />
-<p class="card">
-  {#await status}
-    Controllo il server…
-  {:then value}
-    {describeStatus(value)}
-  {:catch error}
-    Server non raggiungibile ({error.message})
-  {/await}
-</p>
+<main>
+  <h1>GTT</h1>
+  <p>La web app è in costruzione.</p>
+
+  <p class="status">
+    {#await status}
+      Controllo il server…
+    {:then value}
+      {describeStatus(value)}
+    {:catch error}
+      Server non raggiungibile ({error.message})
+    {/await}
+  </p>
+</main>
 ```
 
 > **Frontend concept: a Svelte component.** One file holds the logic (`<script>`), the markup and the styles (`<style>`). Styles apply only to the component's own elements: Svelte adds a unique class to them. `{#await}` shows one of three states of a *Promise* (a value that arrives later): waiting, `{:then}` with the result, `{:catch}` with the error.
 
-The response type mirrors `StatusResponse` in `src/api/status.rs`:
+The response type mirrors `StatusResponse` in `src/api/status.rs` (today in `web/src/lib/api.ts`):
 
 ```ts
 export interface Status {
@@ -308,3 +311,4 @@ Measured on 2026-10-30: full build about 1 minute (the Node stage runs in parall
 ## Later changes
 
 - [Chapter 8](08-design-base.md): `App.svelte` now shows one screen per path; the status line moved to the info screen; `app.css` holds the design tokens.
+- [Chapter 13](13-info-screen.md): the status line became the info screen; `status.ts` now describes the status for it, and the call moved to `api.ts`.
