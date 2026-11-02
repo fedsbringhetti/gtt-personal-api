@@ -90,7 +90,7 @@ match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
 ```yaml
 services:
   gtt-personal-api:
-    image: federicosbringhetti/gtt-personal-api:0.1.0
+    image: federicosbringhetti/gtt-personal-api:0.2.0
     container_name: gtt-personal-api
     restart: unless-stopped
     ports:

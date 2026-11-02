@@ -2,7 +2,7 @@
 services:
   gtt-personal-api:
     # Pin an exact version; to roll back, set the previous one and run `docker compose up -d`.
-    image: federicosbringhetti/gtt-personal-api:0.1.0
+    image: federicosbringhetti/gtt-personal-api:0.2.0
     container_name: gtt-personal-api
     restart: unless-stopped
     ports:
