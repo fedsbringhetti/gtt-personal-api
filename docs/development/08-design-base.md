@@ -75,14 +75,15 @@ A component writes `background: var(--surface)` and is right in both themes. `co
 export type Route =
   | { name: 'home' }
   | { name: 'search'; query: string }
-  | { name: 'stop'; stop: string }
+  /** `lines`: the line filter, `?linee=4,15`; empty for all lines. */
+  | { name: 'stop'; stop: string; lines: string[] }
 ```
 
 ```ts
   const stop = /^\/fermata\/([^/]+)$/.exec(path)
   if (stop) {
     try {
-      return { name: 'stop', stop: decodeURIComponent(stop[1]) }
+      return { name: 'stop', stop: decodeURIComponent(stop[1]), lines: readLines(search) }
     } catch {
       // A malformed escape such as `%E0` cannot be a stop.
       return { name: 'not-found' }
@@ -112,7 +113,7 @@ export const navigation = $state<{ route: Route; tab: Tab; canGoBack: boolean }>
   {:else if navigation.route.name === 'search'}
     <Search query={navigation.route.query} />
   {:else if navigation.route.name === 'stop'}
-    <Stop stop={navigation.route.stop} />
+    <Stop stop={navigation.route.stop} lines={navigation.route.lines} />
 ```
 
 ### Links without page loads
@@ -266,4 +267,4 @@ About 6 KB more (compressed) than the skeleton: the router, the components and t
 
 ## Later changes
 
-None yet.
+- [Chapter 9](09-search-and-stop.md): the stop route carries the line filter (`?linee=`); `DepartureRow` has a canceled variant; the design page shows notices and errors.

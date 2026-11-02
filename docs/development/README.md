@@ -16,6 +16,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 6 | [Docker](06-docker.md): image, health check, compose, deployment files | 1 | [#8](https://github.com/fedsbringhetti/gtt-personal-api/pull/8) |
 | 7 | [Web app skeleton](07-web-skeleton.md): Svelte + Vite project, embedding in the binary, Node stage, frontend CI | 2 | [#11](https://github.com/fedsbringhetti/gtt-personal-api/pull/11) |
 | 8 | [Design base](08-design-base.md): tokens, light and dark, router, bottom bar, badges, departure rows, loaders | 2 | [#13](https://github.com/fedsbringhetti/gtt-personal-api/pull/13) |
+| 9 | [Search and stop](09-search-and-stop.md): API client, names as titles, search while typing, live departures, line filters, error states | 2 | to be opened |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
