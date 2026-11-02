@@ -20,7 +20,7 @@ describe('startPolling', () => {
 
   it('loads now and then at every interval', () => {
     const load = vi.fn()
-    const stop = startPolling(load, 30_000, new FakePage(), Date.now)
+    const stop = startPolling(load, 30_000, new FakePage(), Date.now, new EventTarget())
     expect(load).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(30_000)
     expect(load).toHaveBeenCalledTimes(2)
@@ -34,7 +34,7 @@ describe('startPolling', () => {
   it('pauses in the background and catches up when visible again', () => {
     const page = new FakePage()
     const load = vi.fn()
-    startPolling(load, 30_000, page, Date.now)
+    startPolling(load, 30_000, page, Date.now, new EventTarget())
     page.set('hidden')
     vi.advanceTimersByTime(5 * 60_000)
     expect(load).toHaveBeenCalledTimes(1)
@@ -42,10 +42,19 @@ describe('startPolling', () => {
     expect(load).toHaveBeenCalledTimes(2)
   })
 
+  it('loads at once when the network comes back', () => {
+    const network = new EventTarget()
+    const load = vi.fn()
+    startPolling(load, 30_000, new FakePage(), Date.now, network)
+    vi.advanceTimersByTime(5_000)
+    network.dispatchEvent(new Event('online'))
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
   it('does not load twice when it comes back quickly', () => {
     const page = new FakePage()
     const load = vi.fn()
-    startPolling(load, 30_000, page, Date.now)
+    startPolling(load, 30_000, page, Date.now, new EventTarget())
     vi.advanceTimersByTime(10_000)
     page.set('hidden')
     page.set('visible')

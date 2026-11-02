@@ -8,13 +8,15 @@ export interface Visibility {
 /**
  * Calls `load` now and every `intervalMs` while the page is visible. In the background
  * (another app, the phone locked) it stops; when the page comes back it loads at once if
- * the last load is older than the interval. Returns the function that stops it all.
+ * the last load is older than the interval. When the network comes back (`online` on
+ * `network`) it loads at once too. Returns the function that stops it all.
  */
 export function startPolling(
   load: () => void,
   intervalMs: number,
   page: Visibility = document,
   now: () => number = Date.now,
+  network: Pick<EventTarget, 'addEventListener' | 'removeEventListener'> = window,
 ): () => void {
   let last = 0
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -42,10 +44,16 @@ export function startPolling(
     else schedule(intervalMs - elapsed)
   }
 
+  const onOnline = () => {
+    if (page.visibilityState === 'visible') run()
+  }
+
   page.addEventListener('visibilitychange', onVisibilityChange)
+  network.addEventListener('online', onOnline)
   run()
   return () => {
     clearTimeout(timer)
     page.removeEventListener('visibilitychange', onVisibilityChange)
+    network.removeEventListener('online', onOnline)
   }
 }

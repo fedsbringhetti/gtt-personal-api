@@ -1,19 +1,30 @@
 <script lang="ts">
-  import { errorText, getFavoritesDepartures, type FavoriteDepartures } from '../lib/api'
+  import {
+    errorText,
+    getFavoritesDepartures,
+    isUnreachable,
+    type FavoriteDepartures,
+  } from '../lib/api'
   import ErrorCard from '../lib/components/ErrorCard.svelte'
   import FavoriteCard from '../lib/components/FavoriteCard.svelte'
   import Icon from '../lib/components/Icon.svelte'
   import Notice from '../lib/components/Notice.svelte'
+  import OfflineBanner from '../lib/components/OfflineBanner.svelte'
   import ScreenHeader from '../lib/components/ScreenHeader.svelte'
   import SkeletonRows from '../lib/components/SkeletonRows.svelte'
   import { formatTime } from '../lib/format'
+  import { lastData } from '../lib/lastData'
   import { startPolling } from '../lib/poll'
 
   /** How often the favorites' departures are reloaded while the screen is visible. */
   const REFRESH_MS = 30_000
 
-  let data = $state<{ generated_at: string; favorites: FavoriteDepartures[] } | null>(null)
+  type Data = { generated_at: string; favorites: FavoriteDepartures[] }
+
+  let data = $state<Data | null>(null)
   let failure = $state<string | null>(null)
+  /** The server cannot be reached and old data is shown: when it was received. */
+  let staleSince = $state<string | null>(null)
   let reload: () => void = () => {}
 
   $effect(() => {
@@ -26,9 +37,21 @@
         .then((response) => {
           data = response
           failure = null
+          staleSince = null
+          lastData.saveFavorites(response)
         })
         .catch((error: unknown) => {
-          if (!current.signal.aborted) failure = errorText(error)
+          if (current.signal.aborted) return
+          if (isUnreachable(error)) {
+            // Without network: the data on screen, or else the last saved ones.
+            data ??= lastData.loadFavorites<Data>()?.data ?? null
+            if (data) {
+              staleSince = data.generated_at
+              failure = null
+              return
+            }
+          }
+          failure = errorText(error)
         })
     }
     reload = load
@@ -67,7 +90,9 @@
 </div>
 
 {#if data}
-  {#if failure}
+  {#if staleSince}
+    <OfflineBanner since={staleSince} />
+  {:else if failure}
     <Notice message="Non riesco ad aggiornare: dati delle {formatTime(data.generated_at)}." retry={() => reload()} />
   {/if}
   {#if data.favorites.length === 0}
@@ -78,9 +103,11 @@
     </div>
   {:else}
     {#each data.favorites as favorite (favorite.id)}
-      <FavoriteCard {favorite} />
+      <FavoriteCard {favorite} stale={staleSince !== null} />
     {/each}
-    <p class="updated">Aggiornato alle {formatTime(data.generated_at)} · si aggiorna da solo</p>
+    {#if !staleSince}
+      <p class="updated">Aggiornato alle {formatTime(data.generated_at)} · si aggiorna da solo</p>
+    {/if}
   {/if}
 {:else if failure}
   <ErrorCard message={failure} retry={() => reload()} />

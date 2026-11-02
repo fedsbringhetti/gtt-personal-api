@@ -7,6 +7,7 @@
     getDepartures,
     getFavorites,
     getStop,
+    isUnreachable,
     removeFavorite,
     type DeparturesResponse,
     type Favorite,
@@ -17,11 +18,13 @@
   import ErrorCard from '../lib/components/ErrorCard.svelte'
   import Icon from '../lib/components/Icon.svelte'
   import Notice from '../lib/components/Notice.svelte'
+  import OfflineBanner from '../lib/components/OfflineBanner.svelte'
   import ScreenHeader from '../lib/components/ScreenHeader.svelte'
   import SkeletonRows from '../lib/components/SkeletonRows.svelte'
   import { filterDepartures, isChosen, lineChoices, toggleLine } from '../lib/departures'
   import { matchingFavorite, stopIdOf } from '../lib/favorites'
   import { displayName, formatTime } from '../lib/format'
+  import { lastData } from '../lib/lastData'
   import { navigate } from '../lib/navigation.svelte'
   import { startPolling } from '../lib/poll'
   import { pathOf } from '../lib/router'
@@ -43,6 +46,8 @@
   let data = $state<DeparturesResponse | null>(null)
   /** The last load failed: shown as an error, or as a note above data already on screen. */
   let failure = $state<string | null>(null)
+  /** The server cannot be reached and old data is shown: when it was received. */
+  let staleSince = $state<string | null>(null)
   let notFound = $state(false)
   let reload: () => void = () => {}
 
@@ -57,6 +62,7 @@
     details = null
     data = null
     failure = null
+    staleSince = null
     notFound = false
 
     const isNotFound = (error: unknown) =>
@@ -92,10 +98,21 @@
         .then((response) => {
           data = response
           failure = null
+          staleSince = null
+          lastData.saveStop(id, response)
         })
         .catch((error: unknown) => {
           if (current.signal.aborted) return
           if (isNotFound(error)) notFound = true
+          if (isUnreachable(error)) {
+            // Without network: the data on screen, or else the last saved ones.
+            data ??= lastData.loadStop<DeparturesResponse>(id)?.data ?? null
+            if (data) {
+              staleSince = data.generated_at
+              failure = null
+              return
+            }
+          }
           failure = errorText(error)
         })
     }
@@ -117,7 +134,14 @@
       : `Fermata ${code}`,
   )
   let choices = $derived(lineChoices(details?.lines ?? [], data?.departures ?? []))
-  let shown = $derived(data ? filterDepartures(data.departures, lines) : [])
+  // Offline, departures already gone are hidden: the list shows only what may still pass.
+  let shown = $derived(
+    data
+      ? filterDepartures(data.departures, lines).filter(
+          (departure) => !staleSince || Date.parse(departure.expected) > Date.now(),
+        )
+      : [],
+  )
 
   // The star: full when a favorite has this stop with exactly the lines on screen.
   let favorites = $state<Favorite[] | null>(null)
@@ -206,7 +230,9 @@
     </div>
   {/if}
 
-  {#if data?.stale}
+  {#if staleSince}
+    <OfflineBanner since={staleSince} />
+  {:else if data?.stale}
     <Notice message="Il servizio degli orari non risponde: dati delle {formatTime(data.fetched_at)}." />
   {/if}
 
@@ -235,11 +261,14 @@
             delay={departure.delay_seconds}
             realtime={departure.realtime}
             canceled={departure.canceled}
+            stale={staleSince !== null}
           />
         {/each}
       </ol>
     {/if}
-    <p class="updated">Aggiornato alle {formatTime(data.generated_at)} · si aggiorna da solo</p>
+    {#if !staleSince}
+      <p class="updated">Aggiornato alle {formatTime(data.generated_at)} · si aggiorna da solo</p>
+    {/if}
   {:else if failure}
     <ErrorCard message={failure} retry={() => reload()} />
   {:else}

@@ -221,13 +221,23 @@ export function stopParamFromId(id: string): string {
   return id.startsWith('gtt:') ? id.slice('gtt:'.length) : id
 }
 
+/**
+ * The server could not be reached at all: no network, or a proxy in front of it answered
+ * instead (a 502–504 without the API's error format: Vite in development, Nginx once
+ * deployed). Screens then show the last data they kept.
+ */
+export function isUnreachable(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  if (error.code === 'network') return true
+  return error.code === 'http_error' && error.status >= 502 && error.status <= 504
+}
+
 /** What to tell the user about a failed call, in Italian. */
 export function errorText(error: unknown): string {
   if (!(error instanceof ApiError)) return 'Qualcosa non ha funzionato. Riprova.'
-  // A 502–504 without the API's error format comes from a proxy in front of the server
-  // (Vite in development, Nginx once deployed): the server itself did not answer.
-  const proxyFailure = error.code === 'http_error' && error.status >= 502 && error.status <= 504
-  if (proxyFailure) return 'Server non raggiungibile. Riprova tra poco.'
+  if (error.code !== 'network' && isUnreachable(error)) {
+    return 'Server non raggiungibile. Riprova tra poco.'
+  }
   switch (error.code) {
     case 'network':
       return 'Server non raggiungibile: controlla la connessione.'

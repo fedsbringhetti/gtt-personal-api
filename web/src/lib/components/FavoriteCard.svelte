@@ -12,9 +12,17 @@
 
   interface Props {
     favorite: FavoriteDepartures
+    /** Old data shown offline: clock times instead of minutes, departures already gone hidden. */
+    stale?: boolean
   }
 
-  let { favorite }: Props = $props()
+  let { favorite, stale = false }: Props = $props()
+
+  let departures = $derived(
+    stale
+      ? favorite.departures.filter((departure) => Date.parse(departure.expected) > Date.now())
+      : favorite.departures,
+  )
 
   let stopName = $derived(favorite.stop ? displayName(favorite.stop.name) : null)
   let code = $derived(favorite.stop?.code ?? stopParamFromId(favorite.stop_id))
@@ -42,14 +50,14 @@
     <span class="note">Fermata non più servita: puoi toglierla dai preferiti.</span>
   {:else if problem}
     <span class="note">Partenze non disponibili. {problem}</span>
-  {:else if favorite.departures.length === 0}
+  {:else if departures.length === 0}
     <span class="note">
       Nessuna partenza {favorite.lines.length ? 'delle linee scelte ' : ''}nei prossimi
       {DEPARTURES_MINUTES} minuti.
     </span>
   {:else}
     <ol>
-      {#each favorite.departures as departure (departure.trip_id + departure.scheduled)}
+      {#each departures as departure (departure.trip_id + departure.scheduled)}
         <DepartureRow
           line={departure.line}
           mode={departure.mode}
@@ -59,11 +67,12 @@
           delay={departure.delay_seconds}
           realtime={departure.realtime}
           canceled={departure.canceled}
+          {stale}
           compact
         />
       {/each}
     </ol>
-    {#if favorite.stale}
+    {#if favorite.stale && !stale}
       <span class="note">Il servizio degli orari non risponde: dati non aggiornati.</span>
     {/if}
   {/if}
