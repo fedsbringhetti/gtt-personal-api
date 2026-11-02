@@ -95,11 +95,12 @@ Approved on 2026-11-02 from mockups of every screen, in light and dark, plus the
 
 ## 7. Installable app (PWA) and offline (decision R)
 
-- **Manifest**: name, short name, icons (192, 512, maskable), `display: standalone`, theme and background colors.
-- **iPhone**: `apple-touch-icon`, `apple-mobile-web-app-capable`, status bar style, launch background color.
-- **Service worker** (with `vite-plugin-pwa`, "inject manifest" mode so Phase 3 can add push handling): caches the app shell; API calls always go to the network.
-- **Last data**: the app keeps the last favorites and departures it loaded (in the browser's storage) and shows them, marked with their time, when the network is missing.
-- **Updates**: when a new version is deployed, the app shows "nuova versione disponibile" and reloads on tap.
+- **Name and icon** (`PLAN.md` decision 13): "InTime"; the icon (train, dish, radio waves on red) was chosen from mockups on 2026-11-02. PNG icons are generated once from `web/public/icon.svg` with `npx @vite-pwa/assets-generator` and committed; the generator is not a dependency.
+- **Manifest**: name, short name, icons (64, 192, 512, maskable), `display: standalone`, theme and background colors.
+- **iPhone**: `apple-touch-icon`, `mobile-web-app-capable`, status bar style, `apple-mobile-web-app-title`.
+- **Service worker** (with `vite-plugin-pwa`, "inject manifest" mode so Phase 3 can add push handling): caches the app shell; every path gets the cached `index.html`; API calls always go to the network.
+- **Last data**: the app keeps the last favorites and the departures of the last 10 stops (in `localStorage`) and shows them when the server cannot be reached, with "Sei offline" (or "Server non raggiungibile") and the time of the data; departures show their clock time, and the ones already gone are hidden.
+- **Updates** (chosen on 2026-11-02 over automatic updates): after a new image is deployed, the service worker downloads the new version the next time the app is opened or comes back to the foreground; it then waits, and the app shows "Nuova versione disponibile · Aggiorna"; a tap reloads with the new version.
 
 ## 8. Docker and CI
 

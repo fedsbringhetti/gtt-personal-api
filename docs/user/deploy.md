@@ -100,6 +100,8 @@ Memory at idle should stay under 50 MB.
 
 To roll back, put the previous tag back and run the same commands.
 
+Phones that have the web app open, or installed on the Home Screen, get the new version the next time they open it or bring it back from the background: the app downloads it and shows "Nuova versione disponibile · Aggiorna". Until that tap they keep the version they have, which works offline too.
+
 ## Notes
 
 - **Backup**: `./data` is what needs saving; copy the whole folder, since the database is split across `gtt.db`, `gtt.db-wal` and `gtt.db-shm`. Pausing the container for a few seconds is safe. If the pause overlaps the nightly stop sync (`STOPS_SYNC_TIME`, default 04:00), that sync may fail and is retried after 5 minutes. The stop index is rebuilt automatically anyway; the valuable data are favorites (and, from Phase 3, rules).
