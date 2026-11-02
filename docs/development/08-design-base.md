@@ -267,4 +267,5 @@ About 6 KB more (compressed) than the skeleton: the router, the components and t
 
 ## Later changes
 
+- [Chapter 11](11-near-me.md): the last placeholder screen became the near-me screen; `Placeholder.svelte` was removed.
 - [Chapter 9](09-search-and-stop.md): the stop route carries the line filter (`?linee=`); `DepartureRow` has a canceled variant; the design page shows notices and errors.

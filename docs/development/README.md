@@ -18,6 +18,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 8 | [Design base](08-design-base.md): tokens, light and dark, router, bottom bar, badges, departure rows, loaders | 2 | [#13](https://github.com/fedsbringhetti/gtt-personal-api/pull/13) |
 | 9 | [Search and stop](09-search-and-stop.md): API client, names as titles, search while typing, live departures, line filters, error states | 2 | [#14](https://github.com/fedsbringhetti/gtt-personal-api/pull/14) |
 | 10 | [Home and favorites](10-home-and-favorites.md): favorites with departures in one call, Home cards, the star, managing favorites | 2 | [#15](https://github.com/fedsbringhetti/gtt-personal-api/pull/15) |
+| 11 | [Near me](11-near-me.md): the phone's position, nearby stops, a wider radius, denied permission | 2 | to be opened |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
