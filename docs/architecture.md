@@ -10,7 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
-- **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2, in development: the info screen is still to come).
+- **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2).
 
 It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
@@ -121,7 +121,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `web/src/sw.ts`, `web/src/lib/update.svelte.ts` | service worker; new versions and "Aggiorna" |
 | `web/src/lib/lastData.ts` | last favorites and departures, for offline use |
 | `web/public/`, `web/pwa-assets.config.ts` | icon source and generated PNG icons |
-| `web/src/lib/` | other web app modules: status, line types and delays, bottom bar entries |
+| `web/src/lib/` | other web app modules: what the info screen says about the status, line types and delays, bottom bar entries |
 | `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
 | `web/src/screens/` | one component per screen, plus the development-only design page |
 | `web/vite.config.ts` | build, development proxy to the backend, Vitest |

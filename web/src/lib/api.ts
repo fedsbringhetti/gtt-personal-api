@@ -80,6 +80,22 @@ export interface FavoriteDepartures extends Favorite {
   error: { code: string; message: string } | null
 }
 
+/** Response of `GET /api/status` (`StatusResponse` in `src/api/status.rs`). */
+export interface Status {
+  version: string
+  time: string
+  upstream: {
+    /** `null` before the first call to the upstream. */
+    ok: boolean | null
+    last_success: string | null
+    last_failure: string | null
+    last_error: string | null
+    consecutive_failures: number
+  }
+  /** `null` until the first stop sync. */
+  stop_index: { synced_at: string; count: number } | null
+}
+
 /** How far ahead the stop screen looks, and how many rows it shows at most. */
 export const DEPARTURES_MINUTES = 60
 export const DEPARTURES_LIMIT = 30
@@ -175,6 +191,10 @@ export function getDepartures(stop: string, signal?: AbortSignal): Promise<Depar
     limit: String(DEPARTURES_LIMIT),
   })
   return get(`/api/stops/${encodeURIComponent(stop)}/departures?${params}`, signal)
+}
+
+export function getStatus(signal?: AbortSignal): Promise<Status> {
+  return get('/api/status', signal)
 }
 
 /** Departures per favorite on the home screen. */
