@@ -1,6 +1,6 @@
 # Phase 2 — Web app: detailed plan
 
-Status: **approved** on 2026-10-30. In development since 2026-10-30. On 2026-11-02 authorization (decisions S and T) and the first deployment moved to [Phase 4](phase-4.md): the whole service is built and tested locally first.
+Status: **done**, released as `v0.2.0` on 2026-11-02. Approved on 2026-10-30. On 2026-11-02 authorization (decisions S and T) and the first deployment moved to [Phase 4](phase-4.md): the whole service is built and tested locally first.
 
 Builds on Phase 1: the API (stops, departures, favorites, status), the Docker image and the deployment files.
 
@@ -16,12 +16,12 @@ It also lays the ground for Phase 3, whose notifications (Web Push) need an inst
 
 Checked on the Mac (browser at phone size and iOS Simulator), where `localhost` allows location and the service worker; real phones are checked in Phase 4 (decision 12 in `PLAN.md`).
 
-- [ ] The web app finds a stop by name and by position, and shows its departures refreshing automatically.
-- [ ] The home screen shows the favorites with their next departures; favorites can be added, renamed, filtered by line, reordered and removed.
-- [ ] It installs on the Home Screen (iOS Simulator) and opens full screen, with its own icon.
-- [ ] Without network it still opens and shows the last loaded data, marked as old.
-- [ ] It runs in the local container, survives a restart, idle memory under 60 MB.
-- [ ] The Docker image stays under 50 MB to download.
+- [x] The web app finds a stop by name and by position, and shows its departures refreshing automatically.
+- [x] The home screen shows the favorites with their next departures; favorites can be added, renamed, filtered by line, reordered and removed.
+- [x] It is installable, opens full screen and has its own icon: manifest, icons and service worker checked one by one, and Chrome on the Mac offers to install it. The iOS Simulator was not available (no Xcode on the Mac); the iPhone is checked in Phase 4.
+- [x] Without network it still opens and shows the last loaded data, marked as old.
+- [x] It runs in the local container, survives a restart, idle memory under 60 MB (33.6 MB, measured on 2026-11-02).
+- [x] The Docker image stays under 50 MB to download (37.5 MB compressed).
 
 ## 2. Decisions
 

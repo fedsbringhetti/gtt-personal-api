@@ -84,7 +84,7 @@ This document defines the phases. The detailed plan for each phase is written to
 - Installable web app (PWA) for iPhone and Android, in Italian, built with Svelte and served by the same binary as the backend
 - Stop search by name and by location, departures with automatic refresh, favorites
 
-**Detailed plan**: [docs/plan/phase-2.md](docs/plan/phase-2.md) (approved; authorization and deployment moved to Phase 4 on 2026-11-02)
+**Detailed plan**: [docs/plan/phase-2.md](docs/plan/phase-2.md) (done, released as `v0.2.0` on 2026-11-02; authorization and deployment moved to Phase 4; development story in [docs/development/](docs/development/README.md), chapters 7–13)
 
 ---
 
