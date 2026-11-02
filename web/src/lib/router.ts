@@ -1,0 +1,119 @@
+/**
+ * Paths of the web app and the screen each one shows. Pure functions, so they are tested
+ * without a browser; `navigation.svelte.ts` connects them to the address bar.
+ */
+
+export type Route =
+  | { name: 'home' }
+  | { name: 'search'; query: string }
+  | { name: 'stop'; stop: string }
+  | { name: 'near' }
+  | { name: 'favorites' }
+  | { name: 'info' }
+  | { name: 'design' }
+  | { name: 'not-found' }
+
+/** The four entries of the bottom bar. */
+export type Tab = 'home' | 'search' | 'near' | 'favorites'
+
+export interface RouteOptions {
+  /** The design page exists only in development builds. */
+  dev: boolean
+}
+
+/** Reads a path such as `/fermata/39` (and the query, for `/cerca?q=...`). */
+export function matchRoute(pathname: string, search: string, options: RouteOptions): Route {
+  // `/cerca/` and `/cerca` are the same screen.
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  switch (path) {
+    case '/':
+      return { name: 'home' }
+    case '/cerca':
+      return { name: 'search', query: new URLSearchParams(search).get('q') ?? '' }
+    case '/vicino':
+      return { name: 'near' }
+    case '/preferiti':
+      return { name: 'favorites' }
+    case '/info':
+      return { name: 'info' }
+    case '/prova-grafica':
+      return options.dev ? { name: 'design' } : { name: 'not-found' }
+  }
+  const stop = /^\/fermata\/([^/]+)$/.exec(path)
+  if (stop) {
+    try {
+      return { name: 'stop', stop: decodeURIComponent(stop[1]) }
+    } catch {
+      // A malformed escape such as `%E0` cannot be a stop.
+      return { name: 'not-found' }
+    }
+  }
+  return { name: 'not-found' }
+}
+
+/** The path of a route, for links: the inverse of `matchRoute`. */
+export function pathOf(route: Route): string {
+  switch (route.name) {
+    case 'home':
+      return '/'
+    case 'search':
+      return route.query ? `/cerca?q=${encodeURIComponent(route.query)}` : '/cerca'
+    case 'stop':
+      return `/fermata/${encodeURIComponent(route.stop)}`
+    case 'near':
+      return '/vicino'
+    case 'favorites':
+      return '/preferiti'
+    case 'info':
+      return '/info'
+    case 'design':
+      return '/prova-grafica'
+    case 'not-found':
+      return '/'
+  }
+}
+
+/**
+ * The bottom bar entry to highlight. The four main screens are their own entry; a stop or
+ * the info screen keeps the entry they were opened from, as in the iPhone's own apps.
+ */
+export function tabOf(route: Route, previous: Tab): Tab {
+  switch (route.name) {
+    case 'home':
+    case 'search':
+    case 'near':
+    case 'favorites':
+      return route.name
+    default:
+      return previous
+  }
+}
+
+/** What `navigation.svelte.ts` needs to know about a click on a link. */
+export interface LinkClick {
+  button: number
+  modifier: boolean
+  defaultPrevented: boolean
+  /** The link's `target` attribute, `''` when missing. */
+  target: string
+  download: boolean
+  /** The link's absolute URL and the page's origin. */
+  url: URL
+  origin: string
+}
+
+/**
+ * Whether a click on a link should change screen inside the app instead of loading a new
+ * page: a plain left click on a link to this site, outside `/api/`.
+ */
+export function isInternalClick(click: LinkClick): boolean {
+  return (
+    click.button === 0 &&
+    !click.modifier &&
+    !click.defaultPrevented &&
+    (click.target === '' || click.target === '_self') &&
+    !click.download &&
+    click.url.origin === click.origin &&
+    !click.url.pathname.startsWith('/api/')
+  )
+}
