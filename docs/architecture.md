@@ -114,10 +114,10 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 ## Known limitations
 
 - **Unofficial upstream**: it can change or disappear. `/api/status` and the logs show failures; a schema change shows up as a GraphQL validation error.
-- **No vehicle positions** in the upstream API. A possible source (the 5T MQTT broker) is noted under "Future ideas" in [PLAN.md](../PLAN.md).
+- **No vehicle positions and no service alerts** in the upstream API. Both come from GTT's open data in Phase 3 ([plan/phase-3.md](plan/phase-3.md)).
 - **Search**: stops whose name lacks the searched words but whose description has them rank last (e.g. `pza castello` lists towns' "P.ZA CASTELLO" stops before Turin's "CASTELLO").
 - **Stale data** covers only 2 minutes of upstream failure; after that, departures return an error.
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-In development: Phase 2, the web app and the first deployment ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)).
+In development: Phase 2, the web app ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).

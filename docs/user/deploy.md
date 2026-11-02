@@ -1,6 +1,6 @@
 # Deployment on the home server
 
-> **Not deployed yet.** Until there is a user interface (the web app, Phase 2) the image is only used for local testing: build it with `scripts/build-image.sh` (no `--push`), `cp .env.example .env`, `docker compose up -d`, then `http://localhost:8100`. The steps below are for the first real deployment.
+> **Not deployed yet.** Until Phase 4 (after the web app, rules and notifications) the image is only used for local testing: build it with `scripts/build-image.sh` (no `--push`), `cp .env.example .env`, `docker compose up -d`, then `http://localhost:8100`. The steps below are for the first real deployment.
 
 The service runs as a single container on the home server (Orange Pi 5, ARM64, Debian 12, Docker 29, Compose v5). The image is built on the Mac for `linux/arm64` (native on Apple Silicon), pushed to Docker Hub as a public image, and pulled by the server.
 
@@ -102,8 +102,8 @@ To roll back, put the previous tag back and run the same commands.
 
 ## Notes
 
-- **Backup**: `./data` is what needs saving; copy the whole folder, since the database is split across `gtt.db`, `gtt.db-wal` and `gtt.db-shm`. Pausing the container for a few seconds is safe. If the pause overlaps the nightly stop sync (`STOPS_SYNC_TIME`, default 04:00), that sync may fail and is retried after 5 minutes. The stop index is rebuilt automatically anyway; the valuable data are favorites (and, from Phase 2, rules).
+- **Backup**: `./data` is what needs saving; copy the whole folder, since the database is split across `gtt.db`, `gtt.db-wal` and `gtt.db-shm`. Pausing the container for a few seconds is safe. If the pause overlaps the nightly stop sync (`STOPS_SYNC_TIME`, default 04:00), that sync may fail and is retried after 5 minutes. The stop index is rebuilt automatically anyway; the valuable data are favorites (and, from Phase 3, rules).
 - **Logs** go to stdout only (`docker compose logs`); nothing is written to log files.
-- **Remote access**: through the existing Cloudflare Tunnel and Nginx Proxy Manager, protected by Cloudflare Access (decided 2026-10-30, see [PLAN.md](../../PLAN.md)); the setup is part of the Phase 2 plan ([../plan/phase-2.md](../plan/phase-2.md)). Keep `API_TOKEN` set.
+- **Remote access**: through the existing Cloudflare Tunnel and Nginx Proxy Manager, protected by Cloudflare Access (decided 2026-10-30, see [PLAN.md](../../PLAN.md)); the setup is part of the Phase 4 plan ([../plan/phase-4.md](../plan/phase-4.md)). Keep `API_TOKEN` set.
 - **Limits**: non-root user, 128 MB memory limit, `restart: unless-stopped`.
 - **Measured** on 2026-10-29 (arm64 under Docker on the Mac): download size about 38 MB (138 MB uncompressed: 108 MB Debian base, 15 MB binary); 32 MB of memory after sync and requests; first sync of 19,422 stops in 1.7 s; restart in 0.14 s. With the placeholder web app embedded (2026-10-30): binary 13.5 KB larger, download size unchanged (37.3 MB measured with `docker save | gzip`), 33 MB of memory after the first sync.

@@ -8,7 +8,7 @@ How to run the service and use every endpoint. For settings see [configuration.m
 |-------|-----|
 | Locally, from source | `cargo run`, then `http://localhost:8080`. Data goes to `./data`. The web app is there too once built (`npm ci && npm run build` in `web/`) |
 | Locally, with Docker | build the image (`scripts/build-image.sh`), `cp .env.example .env`, `docker compose up -d`, then `http://localhost:8100` |
-| Home server | not deployed yet, planned with the web app (Phase 2); steps in [deploy.md](deploy.md) |
+| Home server | not deployed yet, planned in Phase 4; steps in [deploy.md](deploy.md) |
 
 On first start the service downloads all stops (2–3 seconds). Until then the stop endpoints answer `503 index_not_ready`.
 

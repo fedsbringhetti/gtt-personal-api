@@ -2,7 +2,7 @@
 
 Status: **done**, released as `v0.1.0` on 2026-10-30. Decisions confirmed on 2026-10-29.
 
-> Phase numbering changed on 2026-10-30: the web app and first deployment became Phase 2, rules and notifications Phase 3. References below use the new numbering. Development not started yet.
+> Phase numbering changed on 2026-10-30: the web app and first deployment became Phase 2, rules and notifications Phase 3. On 2026-11-02 the first deployment moved to Phase 4. References below use the new numbering.
 
 ## 1. Goal
 
@@ -19,7 +19,7 @@ An HTTP API, packaged as a Docker image for the Orange Pi 5, that can:
 - [x] Times stay correct after midnight and across daylight saving changes (covered by tests).
 - [x] If the upstream is down, stop search still works and departures return a clear error (or stale data up to 2 minutes old).
 - [x] The container survives a restart without losing data and uses less than 50 MB of RAM at idle (32 MB measured, arm64 under Docker on the Mac).
-- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned with Phase 2.
+- [ ] The container runs on the Orange Pi: deferred until the first deployment, planned in Phase 4.
 
 ## 2. Decisions
 
@@ -297,7 +297,7 @@ Each step ends with something verifiable and is developed in its own branch with
 3. **Stop index**: migrations, sync, normalization, search, nearby stops, details. Check: the search criteria in section 1.
 4. **Favorites**: table and endpoints.
 5. **Robustness**: `stale` responses, retry, `/api/status`, optional token.
-6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 2.
+6. **Docker and deployment**: arm64 image, compose, deployment guide. Check: all criteria in section 1 in a local container. The first start on the Orange Pi is deferred to Phase 4.
 
 ## 15. Out of scope for this phase
 

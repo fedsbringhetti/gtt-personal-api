@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Personal service for real-time GTT public transport departures in Turin: Rust backend, packaged as a Docker image for an Orange Pi 5 (ARM64); tested locally for now, first deployment planned with Phase 2 (web app). Single user.
+Personal service for real-time GTT public transport departures in Turin: Rust backend, packaged as a Docker image for an Orange Pi 5 (ARM64); tested locally for now, first deployment planned with Phase 4, after the web app (Phase 2) and rules and notifications (Phase 3). Single user.
 
 ## Reference documents
 

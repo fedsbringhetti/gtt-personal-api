@@ -3,7 +3,7 @@
 Personal service for real-time GTT public transport departures in Turin: stop search by name and position, real-time departures with line filters, favorite stops, and a web app for the phone (in development). A Rust backend with SQLite, packaged as a Docker image for an Orange Pi 5.
 Inspired by [madbob/gtt-pirate-api](https://github.com/madbob/gtt-pirate-api).
 
-**Status**: Phase 1 (core backend) done, released as `v0.1.0`. Phase 2 (web app and first deployment) is in development; Phase 3 adds rules, trip tracking and Web Push notifications. See [PLAN.md](PLAN.md).
+**Status**: Phase 1 (core backend) done, released as `v0.1.0`. Phase 2 (web app) is in development; Phase 3 adds GTT open data, rules, trip tracking and Web Push notifications; Phase 4 adds Cloudflare Access and the first deployment. See [PLAN.md](PLAN.md).
 
 ## Quick start
 
