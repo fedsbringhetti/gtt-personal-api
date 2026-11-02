@@ -16,18 +16,34 @@
     realtime: boolean
     /** Old data (offline): the clock time replaces the countdown, which would mislead. */
     stale?: boolean
+    /** The run will not pass: the row stays, so it is clear that this one is gone. */
+    canceled?: boolean
   }
 
-  let { line, mode, headsign, time, minutes, delay, realtime, stale = false }: Props = $props()
+  let {
+    line,
+    mode,
+    headsign,
+    time,
+    minutes,
+    delay,
+    realtime,
+    stale = false,
+    canceled = false,
+  }: Props = $props()
 
-  let delayInfo = $derived(realtime && delay !== null ? describeDelay(delay) : null)
+  let delayInfo = $derived(
+    realtime && delay !== null && !canceled ? describeDelay(delay) : null,
+  )
 </script>
 
-<li class="row">
+<li class="row" class:canceled>
   <LineBadge name={line} {mode} />
   <span class="middle">
     <span class="headsign">{headsign}</span>
-    {#if !stale}
+    {#if canceled}
+      <span class="detail"><s>{time}</s></span>
+    {:else if !stale}
       <span class="detail">
         {#if realtime}
           <span class="realtime"><Icon name="realtime" size={13} stroke={2.6} label="in tempo reale" /></span>
@@ -39,7 +55,9 @@
       </span>
     {/if}
   </span>
-  {#if stale}
+  {#if canceled}
+    <span class="gone">soppressa</span>
+  {:else if stale}
     <span class="clock">alle {time}</span>
   {:else if minutes <= 0}
     <span class="arriving">in arrivo</span>
@@ -121,6 +139,15 @@
   .arriving {
     font-weight: 700;
     color: var(--accent);
+  }
+
+  .canceled .headsign {
+    color: var(--text-2);
+  }
+
+  .gone {
+    font-weight: 600;
+    color: var(--danger);
   }
 
   .clock {
