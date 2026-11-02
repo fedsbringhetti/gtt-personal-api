@@ -1,6 +1,6 @@
 # 10. Home and favorites
 
-> Phase 2, step 4 · PR to be opened
+> Phase 2, step 4 · PR [#15](https://github.com/fedsbringhetti/gtt-personal-api/pull/15)
 
 ## Goal
 
