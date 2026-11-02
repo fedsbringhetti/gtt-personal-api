@@ -1,22 +1,36 @@
 use axum::{
     Json,
     extract::{
-        Path, State,
-        rejection::{JsonRejection, PathRejection},
+        Path, Query, State,
+        rejection::{JsonRejection, PathRejection, QueryRejection},
     },
     http::StatusCode,
 };
+use chrono::{DateTime, SubsecRound, TimeDelta};
+use chrono_tz::Tz;
 use serde::{Deserialize, Deserializer, Serialize};
+use tokio::task::JoinSet;
 
-use super::{AppState, error::ApiError, stops::resolve_stop_id};
+use super::{
+    AppState,
+    error::{ApiError, ErrorBody},
+    stops::{DepartureView, check_range, departure_views, resolve_stop_id},
+};
 use crate::{
+    departures::{FETCH_WINDOW, Filter},
     favorites::{Favorite, FavoriteUpdate, NewFavorite},
     stops::StopInfo,
+    time::TIME_ZONE,
 };
 
 const MAX_LABEL_LEN: usize = 100;
 const MAX_LINES: usize = 20;
 const MAX_LINE_LEN: usize = 10;
+
+/// Departures per favorite on the home screen.
+const DEFAULT_DEPARTURES: usize = 3;
+const MAX_DEPARTURES: usize = 10;
+const DEFAULT_MINUTES: i64 = 60;
 
 #[derive(Debug, Serialize)]
 pub struct FavoritesResponse {
@@ -31,6 +45,31 @@ pub struct FavoriteView {
     stop: Option<StopInfo>,
     /// The stop no longer exists after a sync.
     missing: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeparturesParams {
+    /// Departures per favorite.
+    limit: Option<usize>,
+    minutes: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FavoritesDeparturesResponse {
+    generated_at: DateTime<Tz>,
+    favorites: Vec<FavoriteDepartures>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FavoriteDepartures {
+    #[serde(flatten)]
+    view: FavoriteView,
+    /// On the favorite's lines; empty when `error` is set.
+    departures: Vec<DepartureView>,
+    /// The upstream is failing and these are the last good data.
+    stale: bool,
+    /// Why this favorite has no departures; the other favorites are not affected.
+    error: Option<ErrorBody>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +108,78 @@ pub async fn list(State(state): State<AppState>) -> Result<Json<FavoritesRespons
         favorites.push(view(&state, favorite, index_ready).await?);
     }
     Ok(Json(FavoritesResponse { favorites }))
+}
+
+/// Every favorite with its next departures, for the home screen: one request instead of one
+/// per favorite. Stops are fetched in parallel, through the departures cache.
+pub async fn departures(
+    State(state): State<AppState>,
+    params: Result<Query<DeparturesParams>, QueryRejection>,
+) -> Result<Json<FavoritesDeparturesResponse>, ApiError> {
+    let Query(params) = params.map_err(|err| ApiError::InvalidRequest(err.body_text()))?;
+    let limit = check_range(
+        "limit",
+        params.limit.unwrap_or(DEFAULT_DEPARTURES),
+        1,
+        MAX_DEPARTURES,
+    )?;
+    let max_minutes = (FETCH_WINDOW.as_secs() / 60) as i64;
+    let minutes = check_range(
+        "minutes",
+        params.minutes.unwrap_or(DEFAULT_MINUTES),
+        1,
+        max_minutes,
+    )?;
+
+    let index_ready = state.stops.last_sync().await?.is_some();
+    let favorites = state.favorites.list().await?;
+
+    // One task per favorite; two favorites of the same stop share one upstream call, since
+    // the cache joins concurrent requests for the same key.
+    let mut tasks = JoinSet::new();
+    for (index, favorite) in favorites.iter().enumerate() {
+        let service = state.departures.clone();
+        let stop_id = favorite.stop_id.clone();
+        tasks.spawn(async move { (index, service.get(&stop_id).await) });
+    }
+    let mut fetched: Vec<_> = favorites.iter().map(|_| None).collect();
+    while let Some(joined) = tasks.join_next().await {
+        let (index, result) = joined.map_err(|err| {
+            tracing::error!("departures task failed: {err}");
+            ApiError::Internal
+        })?;
+        fetched[index] = Some(result);
+    }
+
+    let now = state.clock.now();
+    let mut response = Vec::with_capacity(favorites.len());
+    for (favorite, result) in favorites.into_iter().zip(fetched) {
+        let filter = Filter {
+            lines: favorite.lines.clone(),
+            window: TimeDelta::minutes(minutes),
+            limit,
+        };
+        let view = view(&state, favorite, index_ready).await?;
+        response.push(match result.expect("every task reports back") {
+            Ok(fetched) => FavoriteDepartures {
+                departures: departure_views(&fetched.data, &filter, now),
+                stale: fetched.stale,
+                error: None,
+                view,
+            },
+            Err(err) => FavoriteDepartures {
+                departures: Vec::new(),
+                stale: false,
+                error: Some(ApiError::from(err).into_parts().1),
+                view,
+            },
+        });
+    }
+
+    Ok(Json(FavoritesDeparturesResponse {
+        generated_at: now.with_timezone(&TIME_ZONE).trunc_subsecs(0),
+        favorites: response,
+    }))
 }
 
 pub async fn create(

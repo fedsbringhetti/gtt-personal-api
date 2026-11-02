@@ -51,6 +51,29 @@ export interface DeparturesResponse {
   departures: Departure[]
 }
 
+/** A favorite as `GET /api/favorites` returns it (`FavoriteView` in `src/api/favorites.rs`). */
+export interface Favorite {
+  id: number
+  stop_id: string
+  /** The name chosen by the user; `null` shows the stop name. */
+  label: string | null
+  /** Lines to show; empty for all. */
+  lines: string[]
+  position: number
+  created_at: string
+  /** `null` when the stop is not in the index (see `missing`). */
+  stop: StopInfo | null
+  /** A sync removed the stop. */
+  missing: boolean
+}
+
+export interface FavoriteDepartures extends Favorite {
+  departures: Departure[]
+  stale: boolean
+  /** Why this favorite has no departures; the others are not affected. */
+  error: { code: string; message: string } | null
+}
+
 /** How far ahead the stop screen looks, and how many rows it shows at most. */
 export const DEPARTURES_MINUTES = 60
 export const DEPARTURES_LIMIT = 30
@@ -71,10 +94,27 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+interface RequestOptions {
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  /** Sent as JSON. */
+  body?: unknown
+  signal?: AbortSignal
+}
+
+async function request<T>(
+  path: string,
+  { method = 'GET', body, signal }: RequestOptions = {},
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
   let response: Response
   try {
-    response = await fetch(path, { signal, headers: { Accept: 'application/json' } })
+    response = await fetch(path, {
+      method,
+      signal,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
   } catch (error) {
     // An aborted call is not a failure: the caller asked for it and ignores it.
     if (signal?.aborted) throw error
@@ -83,15 +123,20 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   if (!response.ok) {
     // Errors are `{"error": {"code", "message"}}`; anything else (a proxy's HTML page) is
     // reported by its status alone.
-    const body = await response.json().catch(() => null)
-    const error = body?.error
+    const answer = await response.json().catch(() => null)
+    const error = answer?.error
     throw new ApiError(
       response.status,
       typeof error?.code === 'string' ? error.code : 'http_error',
       typeof error?.message === 'string' ? error.message : `HTTP ${response.status}`,
     )
   }
-  return response.json()
+  // 204 No Content (a delete) has no body to read.
+  return response.status === 204 ? (undefined as T) : response.json()
+}
+
+function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+  return request(path, { signal })
 }
 
 export async function searchStops(query: string, signal?: AbortSignal): Promise<StopInfo[]> {
@@ -112,12 +157,48 @@ export function getDepartures(stop: string, signal?: AbortSignal): Promise<Depar
   return get(`/api/stops/${encodeURIComponent(stop)}/departures?${params}`, signal)
 }
 
+/** Departures per favorite on the home screen. */
+export const HOME_DEPARTURES = 3
+
+export async function getFavorites(signal?: AbortSignal): Promise<Favorite[]> {
+  return (await get<{ favorites: Favorite[] }>('/api/favorites', signal)).favorites
+}
+
+export async function getFavoritesDepartures(signal?: AbortSignal) {
+  const params = new URLSearchParams({ limit: String(HOME_DEPARTURES) })
+  return get<{ generated_at: string; favorites: FavoriteDepartures[] }>(
+    `/api/favorites/departures?${params}`,
+    signal,
+  )
+}
+
+export function addFavorite(stop: string, lines: string[]): Promise<Favorite> {
+  return request('/api/favorites', { method: 'POST', body: { stop, lines } })
+}
+
+/** Changes only the fields given; `label: null` goes back to the stop name. */
+export function updateFavorite(
+  id: number,
+  changes: { label?: string | null; lines?: string[]; position?: number },
+): Promise<Favorite> {
+  return request(`/api/favorites/${id}`, { method: 'PATCH', body: changes })
+}
+
+export function removeFavorite(id: number): Promise<void> {
+  return request(`/api/favorites/${id}`, { method: 'DELETE' })
+}
+
 /**
  * How a stop is written in the app's paths: the bare code for GTT (`/fermata/39`), the
  * full id for other companies, whose codes would clash with GTT's.
  */
 export function stopParam(stop: Pick<StopInfo, 'id' | 'feed' | 'code'>): string {
   return stop.feed === 'gtt' ? stop.code : stop.id
+}
+
+/** The same from the full id alone (`gtt:39` → `39`), for a stop no longer in the index. */
+export function stopParamFromId(id: string): string {
+  return id.startsWith('gtt:') ? id.slice('gtt:'.length) : id
 }
 
 /** What to tell the user about a failed call, in Italian. */

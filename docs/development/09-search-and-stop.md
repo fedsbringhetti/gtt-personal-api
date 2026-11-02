@@ -46,7 +46,12 @@ Every call goes through one function, which turns the three ways a call can fail
 
 ```ts
   try {
-    response = await fetch(path, { signal, headers: { Accept: 'application/json' } })
+    response = await fetch(path, {
+      method,
+      signal,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
   } catch (error) {
     // An aborted call is not a failure: the caller asked for it and ignores it.
     if (signal?.aborted) throw error
@@ -189,4 +194,4 @@ Build size: JavaScript 67.2 kB (25.8 kB compressed), CSS 10.0 kB (2.8 kB compres
 
 ## Later changes
 
-None yet.
+- [Chapter 10](10-home-and-favorites.md): the API client sends `POST`, `PATCH` and `DELETE` with JSON bodies; the stop screen has the favorite star; `DepartureRow` has a compact variant.

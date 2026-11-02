@@ -2,19 +2,25 @@
   import {
     ApiError,
     DEPARTURES_MINUTES,
+    addFavorite,
     errorText,
     getDepartures,
+    getFavorites,
     getStop,
+    removeFavorite,
     type DeparturesResponse,
+    type Favorite,
     type StopInfo,
   } from '../lib/api'
   import BusLoader from '../lib/components/BusLoader.svelte'
   import DepartureRow from '../lib/components/DepartureRow.svelte'
   import ErrorCard from '../lib/components/ErrorCard.svelte'
+  import Icon from '../lib/components/Icon.svelte'
   import Notice from '../lib/components/Notice.svelte'
   import ScreenHeader from '../lib/components/ScreenHeader.svelte'
   import SkeletonRows from '../lib/components/SkeletonRows.svelte'
   import { filterDepartures, isChosen, lineChoices, toggleLine } from '../lib/departures'
+  import { matchingFavorite, stopIdOf } from '../lib/favorites'
   import { displayName, formatTime } from '../lib/format'
   import { navigate } from '../lib/navigation.svelte'
   import { startPolling } from '../lib/poll'
@@ -113,6 +119,36 @@
   let choices = $derived(lineChoices(details?.lines ?? [], data?.departures ?? []))
   let shown = $derived(data ? filterDepartures(data.departures, lines) : [])
 
+  // The star: full when a favorite has this stop with exactly the lines on screen.
+  let favorites = $state<Favorite[] | null>(null)
+  let savingFavorite = $state(false)
+  let favoriteFailure = $state<string | null>(null)
+  let favorite = $derived(favorites ? matchingFavorite(favorites, stopIdOf(stop), lines) : undefined)
+
+  $effect(() => {
+    const call = new AbortController()
+    getFavorites(call.signal)
+      .then((list) => (favorites = list))
+      .catch(() => {
+        // Without the list the star stays hidden; the departures matter more.
+      })
+    return () => call.abort()
+  })
+
+  async function toggleFavorite() {
+    savingFavorite = true
+    favoriteFailure = null
+    try {
+      if (favorite) await removeFavorite(favorite.id)
+      else await addFavorite(stop, lines)
+      favorites = await getFavorites()
+    } catch (error) {
+      favoriteFailure = errorText(error)
+    } finally {
+      savingFavorite = false
+    }
+  }
+
   function choose(line: string | null) {
     const next = line === null ? [] : toggleLine(lines, line)
     // `replace`: changing the filter is not a new screen for the back button.
@@ -124,7 +160,27 @@
   title={name ? displayName(name) : `Fermata ${stop}`}
   subtitle={notFound ? undefined : subtitle}
   back
-/>
+>
+  {#snippet actions()}
+    {#if favorites && !notFound}
+      <button
+        type="button"
+        class="star"
+        class:saved={favorite}
+        aria-pressed={!!favorite}
+        aria-label={favorite ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'}
+        disabled={savingFavorite}
+        onclick={toggleFavorite}
+      >
+        <Icon name="star" size={26} stroke={1.8} filled={!!favorite} />
+      </button>
+    {/if}
+  {/snippet}
+</ScreenHeader>
+
+{#if favoriteFailure}
+  <Notice message="Preferiti non aggiornati. {favoriteFailure}" retry={toggleFavorite} />
+{/if}
 
 {#if notFound}
   <div class="card message">
@@ -195,6 +251,22 @@
 {/if}
 
 <style>
+  .star {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch);
+    height: var(--touch);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+  }
+
+  .star.saved {
+    color: var(--favorite);
+  }
+
   .chips {
     display: flex;
     gap: 8px;

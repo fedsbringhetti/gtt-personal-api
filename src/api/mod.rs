@@ -46,6 +46,7 @@ pub fn router(state: AppState) -> Router {
             "/api/favorites",
             get(favorites::list).post(favorites::create),
         )
+        .route("/api/favorites/departures", get(favorites::departures))
         .route(
             "/api/favorites/{id}",
             patch(favorites::update).delete(favorites::delete),

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{AppState, error::ApiError};
 use crate::{
-    departures::{Departure, FETCH_WINDOW, Filter, StopRef},
+    departures::{Departure, FETCH_WINDOW, Filter, StopDepartures, StopRef},
     stops::{Feeds, NearbyStop, StopInfo},
     time::TIME_ZONE,
 };
@@ -121,7 +121,7 @@ fn feeds_or_default(feeds: Option<String>, default: &Feeds) -> Result<Feeds, Api
 }
 
 /// `value` if it is within `min..=max` (NaN never is).
-fn check_range<T: PartialOrd + std::fmt::Display>(
+pub(super) fn check_range<T: PartialOrd + std::fmt::Display>(
     name: &str,
     value: T,
     min: T,
@@ -156,7 +156,7 @@ pub struct DeparturesResponse {
 }
 
 #[derive(Debug, Serialize)]
-struct DepartureView {
+pub(super) struct DepartureView {
     #[serde(flatten)]
     departure: Departure,
     /// Whole minutes until the expected departure.
@@ -176,14 +176,7 @@ pub async fn departures(
     let fetched = state.departures.get(&stop_id).await?;
     let data = &fetched.data;
     let now = state.clock.now();
-    let departures = data
-        .select(&filter, now)
-        .into_iter()
-        .map(|departure| DepartureView {
-            minutes: minutes_until(departure.expected, now),
-            departure: departure.clone(),
-        })
-        .collect();
+    let departures = departure_views(data, &filter, now);
 
     Ok(Json(DeparturesResponse {
         stop: data.stop.clone(),
@@ -236,6 +229,21 @@ pub(super) fn resolve_stop_id(input: &str) -> Option<String> {
         None if valid(input) => Some(format!("gtt:{input}")),
         None => None,
     }
+}
+
+/// The departures `filter` selects, each with its minutes until departure.
+pub(super) fn departure_views(
+    data: &StopDepartures,
+    filter: &Filter,
+    now: DateTime<Utc>,
+) -> Vec<DepartureView> {
+    data.select(filter, now)
+        .into_iter()
+        .map(|departure| DepartureView {
+            minutes: minutes_until(departure.expected, now),
+            departure: departure.clone(),
+        })
+        .collect()
 }
 
 fn minutes_until(expected: DateTime<Tz>, now: DateTime<Utc>) -> i64 {
