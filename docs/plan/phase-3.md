@@ -1,6 +1,6 @@
 # Phase 3 — GTT data, rules, trip tracking and notifications: detailed plan
 
-Status: **decisions confirmed** on 2026-10-30; GTT open data added on 2026-11-02 (decisions N–Q). The parts that depend on the web app (screens, push subscription flow) are completed once Phase 2 has settled the frontend technology; the plan is approved before the phase starts.
+Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02.
 
 Until 2026-10-30 this was Phase 2, with Telegram as the notification channel. The phases were swapped so that notifications can use Web Push from the web app built in Phase 2.
 
@@ -16,7 +16,7 @@ Receive the departures I need on my phone, automatically, as notifications from 
 - an alert when the upstream stops working;
 - a history of the delays of tracked runs.
 
-Checked on the Mac (browser and iOS Simulator), where `localhost` allows Web Push; real phones in Phase 4.
+Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xcode, so no iOS Simulator); real phones in Phase 4.
 
 ### Definition of done
 
@@ -28,7 +28,7 @@ Checked on the Mac (browser and iOS Simulator), where `localhost` allows Web Pus
 - [ ] A recurring tracking rule ("line 4 at 8:05 from stop X, Mon–Fri") does the same every matching day.
 - [ ] The live page of a tracked run shows the expected time and the countdown, updated while it is open.
 - [ ] Rules can be created, edited, paused, skipped for today, resumed, tested and deleted from the web app.
-- [ ] Notifications arrive in the browser on the Mac (on real phones: Phase 4).
+- [ ] Notifications arrive in Chrome on the Mac (on real phones: Phase 4).
 - [ ] If the upstream is down for 5 minutes there is one alert, and one notification when it recovers.
 - [ ] Scheduling is correct across daylight saving changes (covered by tests with a fake clock).
 - [ ] Idle memory stays under 60 MB in the container.
@@ -48,6 +48,11 @@ Checked on the Mac (browser and iOS Simulator), where `localhost` allows Web Pus
 | O | Service alerts | From GTT's `alerts.aspx`, read every 5 minutes. Shown **per line** (an alert lists every stop of its line, a median of 72), filtered on the lines serving the stop. A new alert on a line of an active rule is notified once |
 | P | Vehicle positions | From GTT's `vehicle_position.aspx`, read only while a tracking is active. Shown on the live page only: no new notification for "no vehicle assigned" (can be added later). The vehicle map is a future idea in `PLAN.md` |
 | Q | GTFS static (`PLAN.md` decision 11) | `stops.txt` and `routes.txt` only, downloaded weekly when the zip's `Last-Modified` changes |
+| U | Decoding GTFS Realtime | The **`gtfs-realtime`** crate (0.2, types already generated from the official `.proto` with `prost` 0.14): no protobuf compiler in Docker or CI. Rejected: generating the types with `prost-build` and `protox`, more build steps for the same result |
+| V | Web Push library | **`web-push-native`** (0.5): pure Rust (`aes128gcm` encryption, VAPID signature), builds an `http::Request` that we send with our `reqwest` and rustls. Rejected: `web-push` 0.11, last released in February 2025, on `hyper` 0.14 and bringing OpenSSL, which the project does not use |
+| W | Reading the GTFS static archive | **`zip`** (deflate only) and **`csv`**, reading just `stops.txt` and `routes.txt`. Rejected: `gtfs-structures`, which loads the whole feed (116 MB of stop times) |
+| X | Where notifications live in the web app | A **fifth entry in the bottom bar, "Notifiche"** (bell icon): "Attiva notifiche" and the test notification, trackings in progress, rules (list and editor), the log of sent notifications |
+| Y | New screens | **Mocked up on the design canvas and approved before any code** (step 0), as in Phase 2: alerts banner on the stop page, "Avvisami" on a departure, the live tracking page, the Notifiche screen, the rule editor, the GTT row on the info screen |
 
 ## 3. What we know about the upstream
 
@@ -85,7 +90,7 @@ Consequence: tracking polls the stop departures (already cached since Phase 1, n
 | `vehicle_position.aspx` | every 15 s, only while at least one tracking is active | until the next read |
 | `gtt_gtfs.zip` (`stops.txt`, `routes.txt`) | weekly, and at startup when missing; skipped when `Last-Modified` has not changed | stored in SQLite |
 
-- Messages are decoded with `prost` and the official `gtfs-realtime.proto` (a new dependency, confirmed when the phase starts).
+- Messages are decoded with the `gtfs-realtime` crate (decision U); the GTFS static archive is read with `zip` and `csv` (decision W).
 - Freshness comes from each entity's timestamp, never from the header: a prediction older than 3 minutes or a position older than 2 minutes is ignored.
 - Identical updates are recognized by a hash of the entities, not of the whole response, which changes at every request.
 - Same robustness as the OpenTripPlanner client: timeout, one retry on connection errors and 502–504, invalid messages rejected. Outcomes go to a separate entry in `/api/status`.
@@ -208,7 +213,7 @@ Implementations: `WebPushNotifier` and `LogNotifier` (development and tests).
 4. The service worker in the web app shows the notification; tapping it opens the right page (departures of a stop, live page of a tracking).
 5. Subscriptions that the push service reports as gone (HTTP 404 or 410) are deleted.
 
-Library: a Rust Web Push crate with VAPID and `aes128gcm` support, to choose when the phase starts (`web-push` is the obvious candidate; check that it works with our `reqwest`/`rustls` setup).
+Library: `web-push-native` (decision V). It encrypts the payload and signs the VAPID header, and returns an `http::Request`; the request is sent with the shared `reqwest` client, so timeouts, rustls and logging are the same as for the upstream calls.
 
 ### Message examples (Italian, decision J)
 
@@ -348,7 +353,21 @@ Changes to existing endpoints:
 
 Validation errors use the Phase 1 error format.
 
-## 11. Configuration
+## 11. Screens
+
+Mocked up and approved before the code (decision Y), on the same design canvas as Phase 2, with the same tokens and components.
+
+| Screen | Path | Content |
+|--------|------|---------|
+| Stop (changes) | `/fermata/{stop}` | banner with the active GTT alerts of the lines serving the stop (title, text, link); official line colors on the badges; tapping a departure opens a sheet with "Avvisami" for that run |
+| Live tracking | `/corsa/{id}` | line, destination, stop; countdown to the expected departure, expected and scheduled time, delay, source of the time; for urban runs, "mezzo assegnato" and "a N fermate"; the events already notified; the run's past delays (decision L); "Smetti di seguire" |
+| Notifiche (new tab) | `/notifiche` | "Attiva notifiche" (permission asked after the tap) and "Invia una prova"; trackings in progress, each opening its live page; rules with today's state, enabled toggle, pause and "salta oggi"; the log of sent notifications |
+| Rule editor | `/notifiche/regole/nuova`, `/notifiche/regole/{id}` | kind (riepilogo or segui una corsa), name, stop (search as in Cerca), days, time, lines, reminders, delay threshold, "salta i festivi"; "Prova adesso", delete |
+| Info (changes) | `/info` | a row for GTT's real-time feeds: working, last data, mismatches with OpenTripPlanner |
+
+The bottom bar gets a fifth entry, "Notifiche" (decision X).
+
+## 12. Configuration
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -364,7 +383,7 @@ Validation errors use the Phase 1 error format.
 | `GTT_ALERTS_POLL_SECS` | `300` | alerts reading interval |
 | `GTT_VEHICLES_POLL_SECS` | `15` | vehicle positions reading interval during tracking |
 
-## 12. Tests
+## 13. Tests
 
 - **Unit, with fake clock**: rule occurrences (weekdays, holidays, Easter Monday, pause, skip, one-off dates), daylight saving on both days, midnight.
 - **Tracking state machine**: sequences of departures from fixtures (on time, getting later, cancelled, never appearing, restart in the middle) checked against the expected events.
@@ -374,23 +393,24 @@ Validation errors use the Phase 1 error format.
 - **GTT feeds**: real messages recorded on 2026-11-02 as fixtures (protobuf files) for decoding; a fake server (`wiremock`) for timeouts, errors and invalid messages.
 - **Merge rules**: prediction at the stop, delay carried over from an earlier stop, stop already passed, stale prediction, implausible prediction (mismatch), cancellation from either source, non-urban run, GTT unreachable.
 - **Alerts**: linking by route and by stop, filtering on a stop's lines, a single notification across restarts.
-- **By hand, on the Mac**: notifications in the browser and, if supported, in the iOS Simulator. Real phones in Phase 4.
+- **By hand, in Chrome on the Mac**: notifications, the Notifiche screen, the live page. Real phones in Phase 4.
 
-## 13. Development order
+## 14. Development order
 
-Each step in its own branch with a PR to `main` and its chapter in `docs/development/`. When all steps are complete, `v0.3.0` is released.
+Each step in its own branch with a PR to `main` and its chapter in `docs/development/` (from chapter 14). When all steps are complete, `v0.3.0` is released.
 
-1. **GTT real-time predictions**: GTFS static download (`gtt_stops`, `gtt_routes`), real-time client, merge rules, `source` in departures, line colors, `/api/status`. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
+0. **Mockups** of the new screens (section 11) on the design canvas, approved before step 1. No code.
+1. **GTT real-time predictions**: GTFS static download (`gtt_stops`, `gtt_routes`), real-time client, merge rules, `source` in departures, line colors, `/api/status` and the GTT row on the info screen. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
 2. **Alerts**: reading, linking, `alerts` in departures, `/api/alerts`, banner on the stop page of the web app.
 3. **Rules**: migrations, typed config, CRUD API, holiday calendar, occurrence calculation with fake clock.
-4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, service worker and "attiva notifiche" in the web app, test notification. Check: a test notification arrives in the browser on the Mac.
+4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, push handling in the service worker, the Notifiche tab with "Attiva notifiche" and the test notification. Check: a test notification arrives in Chrome on the Mac.
 5. **Scheduler and summaries**: tick, `rule_runs`, summary rules, `/api/rules/{id}/test`, notification of new alerts on the lines of a rule.
-6. **Tracking**: state machine, one-off trackings from the departures list, recurring tracking rules, vehicle positions, live page.
-7. **Rules in the web app**: list, create, edit, pause, skip today, delete.
+6. **Tracking**: state machine, "Avvisami" on a departure, recurring tracking rules, vehicle positions, the live page.
+7. **Rules in the web app**: list and editor in the Notifiche tab: create, edit, pause, skip today, test, delete.
 8. **Health alerts**: down, recovered, schema changed, sync failed, GTT feeds.
-9. **Delay history**: `observed_delays` and `/api/delays`, shown next to tracked runs.
+9. **Delay history**: `observed_delays` and `/api/delays`, shown on the live page and next to tracking rules.
 
-## 14. Out of scope for this phase
+## 15. Out of scope for this phase
 
 - Telegram, ntfy and other channels (the `Notifier` interface allows them later)
 - Walking time and "leave now" (future idea)
@@ -401,7 +421,7 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 - Multiple users
 - Rules spanning several stops or interchanges
 
-## 15. Risks
+## 16. Risks
 
 | Risk | Mitigation |
 |------|------------|
@@ -413,3 +433,5 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 | iPhone Web Push limits (Home Screen only, permission after a tap, `tag` behavior) | Designed in from Phase 2 (installable PWA); verified on a real iPhone in Phase 4 |
 | A push subscription expires | Removed on 404/410; the web app re-subscribes when opened |
 | Too many upstream calls during tracking | Shared departures cache; polling only inside the watch window; GTT's trip updates cover the whole network in one call |
+| `web-push-native` is a young library | A fake push service in the tests, and a real notification in Chrome at step 4, before the scheduler and tracking are built on it |
+| The `gtfs-realtime` crate stops following the spec | It only holds generated types: switching to `prost-build` and `protox` with the official `.proto` is a contained change |
