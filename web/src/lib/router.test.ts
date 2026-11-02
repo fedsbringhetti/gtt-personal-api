@@ -21,13 +21,26 @@ describe('matchRoute', () => {
   })
 
   it('reads a stop by code or by full id', () => {
-    expect(matchRoute('/fermata/39', '', prod)).toEqual({ name: 'stop', stop: '39' })
-    expect(matchRoute('/fermata/gtt%3A39', '', prod)).toEqual({ name: 'stop', stop: 'gtt:39' })
+    expect(matchRoute('/fermata/39', '', prod)).toEqual({ name: 'stop', stop: '39', lines: [] })
+    expect(matchRoute('/fermata/gtt%3A39', '', prod)).toEqual({
+      name: 'stop',
+      stop: 'gtt:39',
+      lines: [],
+    })
+  })
+
+  it('reads the line filter of a stop', () => {
+    expect(matchRoute('/fermata/39', '?linee=4,15', prod)).toEqual({
+      name: 'stop',
+      stop: '39',
+      lines: ['4', '15'],
+    })
+    expect(matchRoute('/fermata/39', '?linee=9B,,%20', prod)).toMatchObject({ lines: ['9B'] })
   })
 
   it('ignores a trailing slash', () => {
     expect(matchRoute('/cerca/', '', prod)).toEqual({ name: 'search', query: '' })
-    expect(matchRoute('/fermata/39/', '', prod)).toEqual({ name: 'stop', stop: '39' })
+    expect(matchRoute('/fermata/39/', '', prod)).toEqual({ name: 'stop', stop: '39', lines: [] })
   })
 
   it('shows the design page only in development', () => {
@@ -48,8 +61,9 @@ describe('pathOf', () => {
       { name: 'home' },
       { name: 'search', query: '' },
       { name: 'search', query: 'c.so vittorio & co' },
-      { name: 'stop', stop: '39' },
-      { name: 'stop', stop: 'gtt:39' },
+      { name: 'stop', stop: '39', lines: [] },
+      { name: 'stop', stop: 'gtt:39', lines: [] },
+      { name: 'stop', stop: '39', lines: ['4', '9B'] },
       { name: 'near' },
       { name: 'favorites' },
       { name: 'info' },
@@ -69,7 +83,7 @@ describe('tabOf', () => {
   })
 
   it('keeps the previous entry on a stop or the info screen', () => {
-    expect(tabOf({ name: 'stop', stop: '39' }, 'search')).toBe('search')
+    expect(tabOf({ name: 'stop', stop: '39', lines: [] }, 'search')).toBe('search')
     expect(tabOf({ name: 'info' }, 'home')).toBe('home')
   })
 })
