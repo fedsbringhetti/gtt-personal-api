@@ -170,7 +170,7 @@ Every favorite, in order, with its next departures: what the web app's home scre
 curl -s "$BASE/health"
 ```
 
-`{"status": "ok", "version": "0.1.0"}` while the process runs. Used by Docker; never needs the token.
+`{"status": "ok", "version": "0.2.0"}` while the process runs. Used by Docker; never needs the token.
 
 ```bash
 curl -s -H "$AUTH" "$BASE/api/status"
