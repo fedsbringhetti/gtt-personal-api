@@ -18,6 +18,8 @@
     stale?: boolean
     /** The run will not pass: the row stays, so it is clear that this one is gone. */
     canceled?: boolean
+    /** One line, smaller minutes: the rows of a favorite on the home screen. */
+    compact?: boolean
   }
 
   let {
@@ -30,6 +32,7 @@
     realtime,
     stale = false,
     canceled = false,
+    compact = false,
   }: Props = $props()
 
   let delayInfo = $derived(
@@ -37,11 +40,13 @@
   )
 </script>
 
-<li class="row" class:canceled>
+<li class="row" class:canceled class:compact>
   <LineBadge name={line} {mode} />
   <span class="middle">
     <span class="headsign">{headsign}</span>
-    {#if canceled}
+    {#if compact}
+      <!-- Compact rows have no second line. -->
+    {:else if canceled}
       <span class="detail"><s>{time}</s></span>
     {:else if !stale}
       <span class="detail">
@@ -62,7 +67,12 @@
   {:else if minutes <= 0}
     <span class="arriving">in arrivo</span>
   {:else}
-    <span class="minutes"><span class="number">{minutes}</span> min</span>
+    <span class="minutes">
+      {#if compact && realtime}
+        <span class="realtime"><Icon name="realtime" size={14} stroke={2.4} label="in tempo reale" /></span>
+      {/if}
+      <span class="number">{minutes}</span> min
+    </span>
   {/if}
 </li>
 
@@ -139,6 +149,25 @@
   .arriving {
     font-weight: 700;
     color: var(--accent);
+  }
+
+  .compact {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    min-height: 44px;
+  }
+
+  .compact .headsign {
+    font-size: 16px;
+  }
+
+  .compact .minutes {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .compact .number {
+    font-size: 20px;
   }
 
   .canceled .headsign {
