@@ -111,3 +111,27 @@ export function formatDistance(meters: number): string {
   if (rounded < 1000) return `${rounded} m`
   return `${kilometers.format(rounded / 1000)} km`
 }
+
+const dayFormat = new Intl.DateTimeFormat('it-IT', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'Europe/Rome',
+})
+
+/** The calendar day in Turin, `2026-11-02`, to compare two moments. */
+function romeDay(date: Date): string {
+  return date.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' })
+}
+
+/**
+ * "oggi alle 04:00", "ieri alle 04:00", "il 31/10 alle 04:00", in Turin's time. With
+ * `short`, today is just the time ("04:00"), for tight rows.
+ */
+export function formatDayTime(iso: string, now: Date = new Date(), short = false): string {
+  const date = new Date(iso)
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const time = formatTime(iso)
+  if (romeDay(date) === romeDay(now)) return short ? time : `oggi alle ${time}`
+  if (romeDay(date) === romeDay(yesterday)) return `ieri alle ${time}`
+  return `il ${dayFormat.format(date)} alle ${time}`
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, formatDistance, formatTime, highlight } from './format'
+import { displayName, formatDayTime, formatDistance, formatTime, highlight } from './format'
 
 describe('formatTime', () => {
   it('shows Turin time', () => {
@@ -95,5 +95,25 @@ describe('formatDistance', () => {
     expect(formatDistance(996)).toBe('1 km')
     expect(formatDistance(1240)).toBe('1,2 km')
     expect(formatDistance(1500)).toBe('1,5 km')
+  })
+})
+
+describe('formatDayTime', () => {
+  const now = new Date('2026-11-02T15:00:00+01:00')
+
+  it('says today, yesterday or the date, in Turin time', () => {
+    expect(formatDayTime('2026-11-02T03:00:00Z', now)).toBe('oggi alle 04:00')
+    expect(formatDayTime('2026-11-01T22:10:00Z', now)).toBe('ieri alle 23:10')
+    expect(formatDayTime('2026-10-31T03:00:00Z', now)).toBe('il 31/10 alle 04:00')
+  })
+
+  it('drops "oggi alle" in the short form only', () => {
+    expect(formatDayTime('2026-11-02T03:00:00Z', now, true)).toBe('04:00')
+    expect(formatDayTime('2026-11-01T22:10:00Z', now, true)).toBe('ieri alle 23:10')
+  })
+
+  it('uses the Turin day, not the UTC one, around midnight', () => {
+    // 23:30 UTC on 1 November is 00:30 on 2 November in Turin.
+    expect(formatDayTime('2026-11-01T23:30:00Z', now)).toBe('oggi alle 00:30')
   })
 })
