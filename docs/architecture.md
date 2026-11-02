@@ -120,4 +120,4 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-In development: Phase 2, the web app and the first deployment ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)).
+In development: Phase 2, the web app ([plan/phase-2.md](plan/phase-2.md)); then Phase 3, GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).

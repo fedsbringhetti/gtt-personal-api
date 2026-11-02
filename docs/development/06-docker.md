@@ -4,7 +4,7 @@
 
 ## Goal
 
-Package the service as a Docker image for the Orange Pi 5 (`linux/arm64`) and prepare the files to deploy it on the home server following its conventions. The deployment itself was deferred to the web app phase (now Phase 2): for now the image is used for local testing.
+Package the service as a Docker image for the Orange Pi 5 (`linux/arm64`) and prepare the files to deploy it on the home server following its conventions. The deployment itself was deferred (now to Phase 4, after the web app and the notifications): for now the image is used for local testing.
 
 ## Decisions
 
@@ -18,7 +18,7 @@ Package the service as a Docker image for the Orange Pi 5 (`linux/arm64`) and pr
 | **Bind mount `./data`, not a named volume** | The server's backup script saves folders next to `docker-compose.yml`. Requires the folder to belong to uid 10001. |
 | **Secrets only in `.env`** (`env_file`), `.env.example` in the repository | The image is public; nothing secret can be in it or in the compose file. |
 | **Docker Hub** (`federicosbringhetti/gtt-personal-api`) instead of GHCR | Server conventions; decision F updated. |
-| **Deployment deferred to the web app phase** | Nothing to use on the server until there is a user interface. Planned with Phase 3 at the time; the phases were swapped on 2026-10-30, so it is now Phase 2. |
+| **Deployment deferred to the web app phase** | Nothing to use on the server until there is a user interface. Planned with Phase 3 at the time; the phases were swapped on 2026-10-30, so it became Phase 2; on 2026-11-02 it moved to Phase 4, after the whole service. |
 
 ## Files
 
@@ -129,7 +129,7 @@ The Rust tests gained one unit test (`local_addr`). The image was checked by run
 | Image under 40 MB | 38 MB to download (138 MB uncompressed: 108 MB Debian base, 15 MB binary) |
 | Under 50 MB of RAM at idle | 32 MB |
 | Survives a restart without losing data | yes |
-| Runs on the Orange Pi | deferred to Phase 2 |
+| Runs on the Orange Pi | deferred to Phase 4 |
 
 ## Check it by hand
 
@@ -160,5 +160,5 @@ The container should be `healthy` within a few seconds; the service is on `http:
 
 ## Later changes
 
-- The first real deployment will follow [../user/deploy.md](../user/deploy.md), planned with Phase 2 (web app).
+- The first real deployment will follow [../user/deploy.md](../user/deploy.md), planned in Phase 4.
 - [Step 7](07-web-skeleton.md) adds a first stage, `web`, that builds the web app with Node; the builder copies its output before `cargo build`.

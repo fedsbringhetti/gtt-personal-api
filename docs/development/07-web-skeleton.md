@@ -17,7 +17,7 @@ Lay the ground for the web app: a Svelte + Vite + TypeScript project in `web/`, 
 | **Rust tests use a fixture folder**, not `web/dist/` | The tests stay independent of the frontend build, and the two CI jobs can run in parallel. The Docker build is where the two meet. |
 | **Fallback to `index.html`, except `/api/*` and `/assets/*`** | Any other path is a screen of the app. An unknown API path or an old script name must get a real 404, not HTML that the client would try to read as JSON or JavaScript. |
 | **`assets/` cached for a year, the rest `no-cache`** | Vite puts a content hash in those file names, so a name never changes content. `index.html` must be checked at every load to pick up a new version. No `ETag` for now: `index.html` is 450 bytes. |
-| **Web app outside the token check** | The files hold no data; every API call the app makes goes through the check. Cloudflare Access protects everything at the edge from step 2 on. |
+| **Web app outside the token check** | The files hold no data; every API call the app makes goes through the check. Cloudflare Access protects everything at the edge once deployed (Phase 4). |
 | **CI job `check` renamed to `rust`** | With two jobs, "check" no longer said which one. `main` has no branch protection that names it. |
 
 ## Files
