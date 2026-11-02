@@ -15,6 +15,14 @@ This document defines the phases. The detailed plan for each phase is written to
   - Available feeds: `gtt` (GTT urban, suburban, SFM rail, tourist), `2` (Trenitalia), `3` (Arriva), `4` (regional bus companies).
 - **What does not work upstream**: `stops(name: ...)` returns an empty list, so name search must use a local index.
 - **Useful data available**: line, destination (`headsign`), vehicle mode (bus/tram/metro), scheduled and real-time times, `serviceDay`, trip id, coordinates, lines serving a stop.
+- **GTT open data** (verified on 2026-11-02), used from Phase 3:
+  - GTFS static: `https://www.gtt.to.it/open_data/gtt_gtfs.zip` (about 20 MB, rebuilt about weekly, GTT only). Its `stop_id` is not our stop code: `gtt:39` is `stop_code` 39, `stop_id` 2843. `stop_times.txt` alone is 116 MB (1.83 million rows).
+  - GTFS Realtime, Protocol Buffers over HTTP, polled: `https://percorsieorari.gtt.to.it/das_gtfsrt/` + `trip_update.aspx`, `vehicle_position.aspx`, `alerts.aspx`.
+  - Trip and route ids match OpenTripPlanner (`28378913U` ↔ `gtt:28378913U`, `54U` ↔ `gtt:54U`); stop sequences and scheduled times match too (30 trips out of 30 sampled).
+  - Trip updates and vehicle positions cover the **urban network only**. Trip updates have `stop_sequence` but no `stop_id`, and predictions for the next ~6 stops of a run only (median 15% of its stops).
+  - The header `timestamp` is the time of the request (the feed is generated on demand), so freshness comes from each entity's timestamp, and every response differs byte by byte even when nothing changed.
+  - Measured on a Monday morning: each vehicle updates every ~14 s (median; 10th–90th percentile 8–28 s), each trip update every ~38 s (30–100 s), alerts did not change in 2 minutes. Responses of 37, 77 and 137 KB, in 0.2–0.6 s. To be confirmed at other times.
+  - Alerts are not available in OpenTripPlanner (its `alerts` query returns nothing). Predictions differ from OpenTripPlanner's by about 2 minutes (median of 41 comparisons), and at 10:18 OpenTripPlanner had no real-time data at all while the GTT feed did.
 
 ## Stack
 
@@ -34,6 +42,8 @@ This document defines the phases. The detailed plan for each phase is written to
 | 7 | Phase order | rules first / web app first | Web app first (decided 2026-10-30): Phase 2 is the web app, Phase 3 rules, tracking and notifications, which need the web app for Web Push. Authorization and the first deployment are Phase 4, after the whole service has been built and tested locally (decided 2026-11-02) |
 | 8 | Phones | iPhone / Android | Both: the web app is designed for the stricter case (iPhone, installable PWA) |
 | 9 | Language of user-facing text | Italian / English / both | Italian (web app, notifications); code and docs stay in English |
+| 10 | Real-time source | OpenTripPlanner / GTT GTFS Realtime | GTT's own feed for urban runs, since GTT produces the data; then OpenTripPlanner's real time; then the scheduled time. OpenTripPlanner stays the source of stops and of which runs serve a stop, for every company. If GTT's predictions turn out clearly wrong, OpenTripPlanner goes back first (decided 2026-11-02) |
+| 11 | GTFS static | full import / partial / none | Only `stops.txt` (GTT `stop_id` ↔ stop code) and `routes.txt` (official line colors), downloaded weekly; no timetables (decided 2026-11-02) |
 | 12 | Testing on real phones | local HTTPS / temporary tunnel / at deployment | At deployment (Phase 4). Until then the service is tested on the Mac (browser and iOS Simulator), where `localhost` counts as secure for location, service worker and Web Push (decided 2026-11-02) |
 
 ## Workflow
@@ -77,11 +87,14 @@ This document defines the phases. The detailed plan for each phase is written to
 
 ---
 
-## Phase 3 — Rules, trip tracking and notifications
+## Phase 3 — GTT data, rules, trip tracking and notifications
 
 **Goal**: automatically receive the departures I need, when I need them, as Web Push notifications from the web app.
 
 **Features**
+- Real-time predictions from GTT's own feed for urban runs, with OpenTripPlanner as fallback (decision 10)
+- GTT service alerts in the departures and in the web app, and notified for the lines of a rule
+- Vehicle positions during trip tracking: whether a vehicle is assigned to the run, and how many stops away it is
 - Scheduled summary (e.g. "Mon–Fri at 7:40, lines 4 and 15 from stop X")
 - Trip tracking, on the fly from the departures list or as a recurring rule: reminders N minutes before, delay and cancellation alerts, a live page
 - Delay history of tracked runs
@@ -121,14 +134,16 @@ A "leave now" alert needs the walking time to the stop: entered by hand, estimat
 
 Separate accounts with their own favorites and rules. Cloudflare Access can already let several email addresses in, but they would share the same data today. The delay history is stored per run, so it would be shared by all users and more precise with more of them.
 
-### Real-time vehicle positions
+### Vehicle map
 
-Found on 2026-10-29 by inspecting [InfomezziMap](https://infomezzi.marmox.to.it/immap/).
+A map in the web app with the vehicles of a line or near a stop, moving in real time. Proposed on 2026-11-02, after choosing GTT's vehicle positions feed for trip tracking in Phase 3.
 
-- **Source**: the 5T MQTT broker at `wss://mapi.5t.torino.it/scre`, the same one used by muoversiatorino.it.
-- **Topics**: subscribe to `/<line>/#` (or `#` for all lines); messages arrive on `/<line>/<vehicleId>`.
-- **Payload**: JSON array `[lat, lon, heading, ?, tripId, direction, nextStop, ...]`; a longer array marks a full vehicle.
-- **Possible uses**: a vehicle map in the frontend; "your bus is N stops away" during trip tracking; earlier detection of runs that never started.
-- **Open question**: the site connects with `Origin: https://www.muoversiatorino.it`. Using the broker from this service would mean presenting the same origin. To decide before any work starts.
-- **Not verified**: whether the broker accepts other origins, and whether `tripId` matches the OpenTripPlanner `trip.gtfsId`.
-- **Not to use**: InfomezziMap's own `getWsData.php` endpoint; it is a private server with its own token.
+- **Source**: `vehicle_position.aspx` from GTT open data (see Context): position, heading, run, line and vehicle number for about 450 urban vehicles; no speed and no current stop.
+- **Needs**: a map library and tiles in the web app; line shapes from OpenTripPlanner (pattern geometry) to draw the route, so `shapes.txt` is not needed.
+- **Limits**: urban network only; about a quarter of the vehicles have no run assigned; a few positions are minutes old and must be hidden or marked.
+
+Replaces the earlier idea of reading positions from the 5T MQTT broker at `wss://mapi.5t.torino.it/scre` (found on 2026-10-29 through InfomezziMap), dropped on 2026-11-02: it needs the `Origin` of muoversiatorino.it, while GTT publishes the same data openly.
+
+### Full GTFS import
+
+A fallback if OpenTripPlanner disappears: import GTT's whole GTFS (calendars, 61,000 runs, 1.83 million stop times) and compute departures locally, merged with GTT's trip updates. A large piece of work, that would replace what OpenTripPlanner does for free; only for GTT, other companies would be lost. Proposed on 2026-11-02, not planned.
