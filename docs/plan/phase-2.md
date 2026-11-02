@@ -56,13 +56,15 @@ browser ──▶ :8080 (cargo run) or :8100 (container)
 
 All text in Italian. Departures refresh every 30 seconds while the screen is visible and stop when the app is in the background.
 
+Names come from the upstream in capitals and are shown as titles ("Porta Nuova", "Strada del Drosso"), keeping codes, line names, acronyms and Roman numerals. When the server returns old data (`stale`) or a refresh fails, a note above the departures says so, with the time of the data.
+
 Navigation: a bar at the bottom with four entries (Home, Cerca, Vicino, Preferiti); Info is reached from an icon at the top of Home; the stop and info screens have a back link.
 
 | Screen | Path | Content | API |
 |--------|------|---------|-----|
 | Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 2–3 departures each | `/api/favorites/departures` (new, section 5) |
-| Search | `/cerca?q=` | results while typing (after 250 ms of pause): name, code, lines | `/api/stops?q=` |
-| Stop | `/fermata/{stop}` | name, code, lines as filter chips, star to save it, live departures: line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
+| Search | `/cerca?q=` | results while typing (after 250 ms of pause): name, code, lines, matching words in bold | `/api/stops?q=` |
+| Stop | `/fermata/{stop}?linee=` | name, code, lines as filter chips (several at once, kept in the address), star to save it, live departures of the next 60 minutes (at most 30): line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes, canceled runs struck through as "soppressa" | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
 | Near me | `/vicino` | after the location permission: stops by distance, with lines | `/api/stops/nearby` |
 | Favorites | `/preferiti` | rename, choose lines, move up/down, remove | `/api/favorites` |
 | Info | `/info` | version, upstream status, last stop update, how to install on the Home Screen | `/api/status` |
@@ -116,7 +118,7 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 
 1. **Frontend skeleton**: `web/` with Svelte, Vite and TypeScript; embedding and fallback in the binary; Node stage in the Dockerfile; CI job. Check: a placeholder page served by `cargo run` and by the container.
 2. **Design base**: tokens, light/dark, router, layout and bottom bar, line badges, times and delays, loaders, icons; a page showing them all, in development builds only. Checked against the approved mockups.
-3. **Search and stop**: search screen, stop screen with live departures and line filters.
+3. **Search and stop**: API client, name and time formatting, search screen, stop screen with live departures, line filters, notes for old data and errors.
 4. **Home and favorites**: `/api/favorites/departures`, home cards, favorites management, star on the stop screen.
 5. **Near me**: location permission and nearby list.
 6. **PWA and offline**: manifest, icons, service worker, last data, update prompt, iPhone details.

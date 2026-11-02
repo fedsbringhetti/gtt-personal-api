@@ -4,7 +4,9 @@
   import BusLoader from '../lib/components/BusLoader.svelte'
   import DepartureRow from '../lib/components/DepartureRow.svelte'
   import Icon, { type IconName } from '../lib/components/Icon.svelte'
+  import ErrorCard from '../lib/components/ErrorCard.svelte'
   import LineBadge from '../lib/components/LineBadge.svelte'
+  import Notice from '../lib/components/Notice.svelte'
   import ScreenHeader from '../lib/components/ScreenHeader.svelte'
   import SkeletonRows from '../lib/components/SkeletonRows.svelte'
 
@@ -78,7 +80,13 @@
   <DepartureRow line="6" mode="BUS" headsign="Sassi" time="08:14" minutes={13} delay={10} realtime />
   <DepartureRow line="68" mode="BUS" headsign="Mongreno" time="08:16" minutes={15} delay={-60} realtime />
   <DepartureRow line="9" mode="TRAM" headsign="Stampalia" time="08:20" minutes={19} delay={360} realtime />
+  <DepartureRow line="67" mode="BUS" headsign="Moncalieri, Testona" time="08:24" minutes={23} delay={0} realtime canceled />
 </ol>
+
+<h2>Avvisi ed errori</h2>
+<Notice message="Il servizio degli orari non risponde: dati delle 08:01." />
+<Notice message="Non riesco ad aggiornare: dati delle 08:01." retry={() => {}} />
+<ErrorCard message="Server non raggiungibile: controlla la connessione." retry={() => {}} />
 
 <h2>Offline</h2>
 <div class="offline" role="status">

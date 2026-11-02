@@ -6,7 +6,8 @@
 export type Route =
   | { name: 'home' }
   | { name: 'search'; query: string }
-  | { name: 'stop'; stop: string }
+  /** `lines`: the line filter, `?linee=4,15`; empty for all lines. */
+  | { name: 'stop'; stop: string; lines: string[] }
   | { name: 'near' }
   | { name: 'favorites' }
   | { name: 'info' }
@@ -42,13 +43,21 @@ export function matchRoute(pathname: string, search: string, options: RouteOptio
   const stop = /^\/fermata\/([^/]+)$/.exec(path)
   if (stop) {
     try {
-      return { name: 'stop', stop: decodeURIComponent(stop[1]) }
+      return { name: 'stop', stop: decodeURIComponent(stop[1]), lines: readLines(search) }
     } catch {
       // A malformed escape such as `%E0` cannot be a stop.
       return { name: 'not-found' }
     }
   }
   return { name: 'not-found' }
+}
+
+function readLines(search: string): string[] {
+  const value = new URLSearchParams(search).get('linee') ?? ''
+  return value
+    .split(',')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
 }
 
 /** The path of a route, for links: the inverse of `matchRoute`. */
@@ -58,8 +67,13 @@ export function pathOf(route: Route): string {
       return '/'
     case 'search':
       return route.query ? `/cerca?q=${encodeURIComponent(route.query)}` : '/cerca'
-    case 'stop':
-      return `/fermata/${encodeURIComponent(route.stop)}`
+    case 'stop': {
+      const path = `/fermata/${encodeURIComponent(route.stop)}`
+      // Commas stay readable in the address: `?linee=4,15`.
+      return route.lines.length
+        ? `${path}?linee=${route.lines.map(encodeURIComponent).join(',')}`
+        : path
+    }
     case 'near':
       return '/vicino'
     case 'favorites':
