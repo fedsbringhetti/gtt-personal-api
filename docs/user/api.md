@@ -137,6 +137,33 @@ curl -s -H "$AUTH" -X DELETE "$BASE/api/favorites/1"
 
 Deletes it (204); the following favorites move up.
 
+```bash
+curl -s -H "$AUTH" "$BASE/api/favorites/departures?limit=3"
+```
+
+Every favorite, in order, with its next departures: what the web app's home screen shows, in one call.
+
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| `limit` | 3 | departures per favorite, 1–10 |
+| `minutes` | 60 | how far ahead, 1–120 |
+
+```json
+{
+  "generated_at": "2026-10-29T17:23:53+01:00",
+  "favorites": [{
+    "id": 1, "stop_id": "gtt:39", "label": "Casa", "lines": ["67"], "position": 0,
+    "created_at": "2026-10-29T16:23:53Z", "stop": {"id": "gtt:39", "code": "39", "name": "PORTA NUOVA"},
+    "missing": false, "stale": false, "error": null,
+    "departures": [{"line": "67", "minutes": 0, "expected": "2026-10-29T17:23:53+01:00"}]
+  }]
+}
+```
+
+- Each favorite is shown as in `GET /api/favorites` (`stop` abridged here) plus `departures` (same fields as the stop departures, filtered by the favorite's `lines`), `stale` and `error`.
+- When one stop fails, that favorite has `departures: []` and `error: {"code", "message"}` (codes as in [Errors](#errors)); the others are unaffected and the response is still 200.
+- Stops are read in parallel and through the same cache as `/api/stops/{stop}/departures`.
+
 ## Status and health
 
 ```bash

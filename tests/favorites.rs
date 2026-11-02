@@ -5,7 +5,10 @@ use std::time::Duration;
 use axum::http::{Method, StatusCode};
 use gtt_personal_api::stops::sync::sync_once;
 use serde_json::{Value, json};
-use wiremock::{Mock, ResponseTemplate, matchers::method};
+use wiremock::{
+    Mock, MockServer, ResponseTemplate,
+    matchers::{body_partial_json, method},
+};
 
 use common::{NOW, at, fixture, get, send, synced_app};
 
@@ -256,4 +259,97 @@ async fn invalid_requests_return_400() {
     let (status, json) = send(&app.router, Method::DELETE, "/api/favorites/abc", None).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(json["error"]["code"], "invalid_request");
+}
+
+/// Makes the fake upstream answer departure queries for `stop` with `response`, ahead of the
+/// catch-all answer of `synced_app`.
+async fn upstream_answers(server: &MockServer, stop: &str, response: ResponseTemplate) {
+    Mock::given(method("POST"))
+        .and(body_partial_json(json!({ "variables": { "id": stop } })))
+        .respond_with(response)
+        .with_priority(1)
+        .mount(server)
+        .await;
+}
+
+#[tokio::test]
+async fn departures_of_every_favorite_in_one_call() {
+    let (app, server) = synced_app().await;
+    let stop_39 = ResponseTemplate::new(200).set_body_json(fixture("stop_39.json"));
+    upstream_answers(&server, "gtt:39", stop_39).await;
+    create(
+        &app.router,
+        json!({ "stop": "39", "label": "Casa", "lines": ["67"] }),
+    )
+    .await;
+    create(&app.router, json!({ "stop": "39" })).await;
+
+    let (status, json) = get(&app.router, "/api/favorites/departures").await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["generated_at"], "2026-10-29T17:23:53+01:00");
+    let favorites = json["favorites"].as_array().unwrap();
+    assert_eq!(favorites.len(), 2);
+
+    let only_67 = &favorites[0];
+    assert_eq!(only_67["label"], "Casa");
+    assert_eq!(only_67["stop"]["name"], "PORTA NUOVA");
+    assert_eq!(only_67["stale"], false);
+    assert_eq!(only_67["error"], Value::Null);
+    let lines: Vec<&str> = only_67["departures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["line"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        lines,
+        ["67", "67", "67"],
+        "the favorite's lines, 3 by default"
+    );
+    assert_eq!(only_67["departures"][0]["minutes"], 0);
+
+    assert_eq!(favorites[1]["departures"].as_array().unwrap().len(), 3);
+    assert_eq!(favorites[1]["position"], 1);
+}
+
+#[tokio::test]
+async fn one_failing_stop_does_not_hide_the_others() {
+    let (app, server) = synced_app().await;
+    let stop_39 = ResponseTemplate::new(200).set_body_json(fixture("stop_39.json"));
+    upstream_answers(&server, "gtt:39", stop_39).await;
+    upstream_answers(&server, "gtt:40", ResponseTemplate::new(503)).await;
+    create(&app.router, json!({ "stop": "40" })).await;
+    create(&app.router, json!({ "stop": "39" })).await;
+
+    let (status, json) = get(&app.router, "/api/favorites/departures?limit=5").await;
+
+    assert_eq!(status, StatusCode::OK);
+    let failed = &json["favorites"][0];
+    assert_eq!(failed["stop_id"], "gtt:40");
+    assert_eq!(failed["error"]["code"], "upstream_error");
+    assert_eq!(failed["departures"], json!([]));
+    let working = &json["favorites"][1];
+    assert_eq!(working["error"], Value::Null);
+    assert_eq!(working["departures"].as_array().unwrap().len(), 5);
+}
+
+#[tokio::test]
+async fn favorites_departures_without_favorites_or_with_bad_parameters() {
+    let (app, _server) = synced_app().await;
+
+    let (status, json) = get(&app.router, "/api/favorites/departures").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["favorites"], json!([]));
+
+    for uri in [
+        "/api/favorites/departures?limit=0",
+        "/api/favorites/departures?limit=11",
+        "/api/favorites/departures?minutes=121",
+        "/api/favorites/departures?limit=x",
+    ] {
+        let (status, json) = get(&app.router, uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}");
+        assert_eq!(json["error"]["code"], "invalid_request", "{uri}");
+    }
 }

@@ -5,6 +5,7 @@ use axum::{
     http::{HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
+use serde::Serialize;
 use serde_json::json;
 
 use crate::{
@@ -27,8 +28,16 @@ pub enum ApiError {
     Internal,
 }
 
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
+/// The `{"code", "message"}` part of an error, also used inside larger responses (one
+/// favorite whose departures failed).
+#[derive(Debug, Serialize)]
+pub struct ErrorBody {
+    pub code: &'static str,
+    pub message: String,
+}
+
+impl ApiError {
+    pub fn into_parts(self) -> (StatusCode, ErrorBody) {
         let (status, code, message) = match self {
             Self::InvalidRequest(message) => (StatusCode::BAD_REQUEST, "invalid_request", message),
             Self::Unauthorized => (
@@ -63,7 +72,14 @@ impl IntoResponse for ApiError {
                 "Internal error".to_owned(),
             ),
         };
-        let body = json!({ "error": { "code": code, "message": message } });
+        (status, ErrorBody { code, message })
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, error) = self.into_parts();
+        let body = json!({ "error": error });
         let mut response = (status, Json(body)).into_response();
         if status == StatusCode::UNAUTHORIZED {
             response
