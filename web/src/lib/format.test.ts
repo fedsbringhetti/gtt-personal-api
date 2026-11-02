@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, formatTime, highlight } from './format'
+import { displayName, formatDistance, formatTime, highlight } from './format'
 
 describe('formatTime', () => {
   it('shows Turin time', () => {
@@ -80,5 +80,20 @@ describe('highlight', () => {
   it('returns the text as it is without a match', () => {
     expect(highlight('Bertola', 'xyz')).toEqual([{ text: 'Bertola', match: false }])
     expect(highlight('Bertola', '')).toEqual([{ text: 'Bertola', match: false }])
+  })
+})
+
+describe('formatDistance', () => {
+  it('rounds to 10 meters', () => {
+    expect(formatDistance(0)).toBe('0 m')
+    expect(formatDistance(83)).toBe('80 m')
+    expect(formatDistance(85)).toBe('90 m')
+    expect(formatDistance(994)).toBe('990 m')
+  })
+
+  it('switches to kilometers with an Italian comma', () => {
+    expect(formatDistance(996)).toBe('1 km')
+    expect(formatDistance(1240)).toBe('1,2 km')
+    expect(formatDistance(1500)).toBe('1,5 km')
   })
 })

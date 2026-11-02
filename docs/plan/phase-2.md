@@ -65,7 +65,7 @@ Navigation: a bar at the bottom with four entries (Home, Cerca, Vicino, Preferit
 | Home | `/` | search bar, "vicino a me" button, favorites as cards with the next 3 departures each, refreshed every 30 seconds; a card opens its stop with the favorite's lines | `/api/favorites/departures` (new, section 5) |
 | Search | `/cerca?q=` | results while typing (after 250 ms of pause): name, code, lines, matching words in bold | `/api/stops?q=` |
 | Stop | `/fermata/{stop}?linee=` | name, code, lines as filter chips (several at once, kept in the address), star to save it, live departures of the next 60 minutes (at most 30): line badge, destination, minutes (large), expected time, delay in color, real-time indicator, "in arrivo" at 0 minutes, canceled runs struck through as "soppressa" | `/api/stops/{stop}`, `/api/stops/{stop}/departures` |
-| Near me | `/vicino` | after the location permission: stops by distance, with lines | `/api/stops/nearby` |
+| Near me | `/vicino` | the position is asked when the screen opens (the tap on "Vicino" or "vicino a me"); stops within 500 m by distance, with lines, or within 1.5 km when there are none; "Aggiorna" asks again; help to re-enable a denied permission | `/api/stops/nearby` |
 | Favorites | `/preferiti` | rename (saved on leaving the field), choose lines, move up/down, remove with a second tap to confirm; each change saved at once | `/api/favorites` |
 | Info | `/info` | version, upstream status, last stop update, how to install on the Home Screen | `/api/status` |
 
@@ -121,7 +121,7 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 2. **Design base**: tokens, light/dark, router, layout and bottom bar, line badges, times and delays, loaders, icons; a page showing them all, in development builds only. Checked against the approved mockups.
 3. **Search and stop**: API client, name and time formatting, search screen, stop screen with live departures, line filters, notes for old data and errors.
 4. **Home and favorites**: `/api/favorites/departures`, home cards, favorites management, star on the stop screen.
-5. **Near me**: location permission and nearby list.
+5. **Near me**: position from the browser, nearby list, wider radius when empty, denied permission and errors.
 6. **PWA and offline**: manifest, icons, service worker, last data, update prompt, iPhone details.
 7. **Info screen**.
 8. **Release** `v0.2.0`.

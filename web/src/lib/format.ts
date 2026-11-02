@@ -102,3 +102,12 @@ export function highlight(text: string, query: string): TextPart[] {
   })
   return parts
 }
+
+const kilometers = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 })
+
+/** `83` → `80 m`, `1240` → `1,2 km`: as precise as a position on a phone can be. */
+export function formatDistance(meters: number): string {
+  const rounded = Math.round(meters / 10) * 10
+  if (rounded < 1000) return `${rounded} m`
+  return `${kilometers.format(rounded / 1000)} km`
+}

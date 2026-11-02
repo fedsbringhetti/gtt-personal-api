@@ -10,7 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
-- **a web app** for the phone, served by the same binary (Phase 2, in development: Home, search, stop and favorites screens so far).
+- **a web app** for the phone, served by the same binary (Phase 2, in development: all six screens; installable app, offline and info screen to come).
 
 It is a single Rust binary, with the web app embedded in it and an SQLite database, built as a Docker image for the Orange Pi 5 (ARM64).
 
@@ -46,7 +46,7 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 - **Paths**: an existing file is served as is; `/api/*` and missing files under `/assets/` are 404; any other path gets `index.html`, and the app shows the screen for that path (`/fermata/39`).
 - **Cache**: files under `assets/` are cached by the browser for a year (`immutable`: a new build gives them new names); everything else is `no-cache`, so a new version is picked up at the next load.
 - **Screens**: `App.svelte` shows one screen per path (`/`, `/cerca`, `/fermata/39`, `/vicino`, `/preferiti`, `/info`) with a bottom bar. The app's own router (`web/src/lib/router.ts`) reads the path; a listener on the document turns clicks on the app's links into screen changes without page loads, using the browser history. `/prova-grafica` shows the design base, in development builds only.
-- **Data**: `web/src/lib/api.ts` calls the API with types that mirror the Rust structs and turns failures into one `ApiError`; screens abort calls they no longer need. The stop screen reloads departures every 30 seconds only while the page is visible (`poll.ts`) and filters lines on the data it has (`?linee=` in the address). Names arrive in capitals and are shown as titles (`format.ts`).
+- **Data**: `web/src/lib/api.ts` calls the API with types that mirror the Rust structs and turns failures into one `ApiError`; screens abort calls they no longer need. The stop screen reloads departures every 30 seconds only while the page is visible (`poll.ts`) and filters lines on the data it has (`?linee=` in the address). Names arrive in capitals and are shown as titles (`format.ts`). The near-me screen asks the browser for the position only when it opens, sends it only in that one search and keeps it nowhere (not in the address, not in storage; the server does not log requests).
 - **Look**: design tokens are CSS variables in `web/src/app.css`, with a second set for the phone's dark theme; components use only the variables. Shared pieces (line badge, departure row, loaders, icons) are in `web/src/lib/components/`.
 - **Access**: the web app is not behind the token; it holds no data, and its API calls are checked like any other.
 - **Development**: `npm run dev` in `web/` serves the app on port 5173 with instant reloads and forwards `/api` to `cargo run` on 8080.
@@ -116,6 +116,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `web/src/lib/api.ts` | API types and calls, errors and their Italian messages |
 | `web/src/lib/format.ts`, `poll.ts`, `departures.ts` | times, names and matches; reloading while visible; line filters |
 | `web/src/lib/favorites.ts` | the favorite behind the star on a stop |
+| `web/src/lib/location.ts` | the phone's position, asked to the browser, with Italian errors |
 | `web/src/lib/` | other web app modules: status, line types and delays, bottom bar entries |
 | `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
 | `web/src/screens/` | one component per screen, plus the development-only design page |

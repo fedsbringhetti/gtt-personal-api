@@ -5,6 +5,7 @@ import {
   errorText,
   getDepartures,
   getStop,
+  nearbyStops,
   removeFavorite,
   searchStops,
   stopParam,
@@ -29,6 +30,12 @@ describe('requests', () => {
     const fetch = respond(200, { stops: [] })
     await searchStops("c.so sant'anna & co")
     expect(fetch.mock.calls[0][0]).toBe("/api/stops?q=c.so+sant%27anna+%26+co&limit=20")
+  })
+
+  it('sends the position and radius of a nearby search', async () => {
+    const fetch = respond(200, { stops: [] })
+    await nearbyStops({ lat: 45.0626, lon: 7.679 }, 500)
+    expect(fetch.mock.calls[0][0]).toBe('/api/stops/nearby?lat=45.0626&lon=7.679&radius=500')
   })
 
   it('encodes a full stop id in the path', async () => {
