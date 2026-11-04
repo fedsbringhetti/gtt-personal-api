@@ -169,4 +169,4 @@ To see the fallback, start the server with `GTT_REALTIME_URL=` (empty): every `s
 
 ## Later changes
 
-None yet.
+- [Chapter 15](15-gtt-alerts.md): `GttRealtime` also reads the alerts; both feeds go through one `read` with the retry, each with its own health.

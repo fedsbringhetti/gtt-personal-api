@@ -103,6 +103,13 @@ curl -s -H "$AUTH" "$BASE/api/stops/39/departures?lines=4,15&minutes=30&limit=10
     "scheduled": "2026-10-29T17:24:00+01:00", "expected": "2026-10-29T17:23:53+01:00",
     "delay_seconds": -7, "realtime": true, "canceled": false,
     "trip_id": "gtt:28459721U", "source": "otp", "minutes": 0
+  }],
+  "alerts": [{
+    "id": "6aa2a2bc22bb480c377bee29", "title": "Linea 9 deviata in entrambe le direzioni.",
+    "description": "Da lunedì 14 settembre 2026 e sino a nuove comunicazioni.\nDirezione piazza Stampalia: ...",
+    "url": "http://www.gtt.to.it/cms/percorari/urbano",
+    "lines": [{"id": "gtt:9U", "name": "9", "mode": "TRAM"}],
+    "start": "2026-09-15T05:00:00+02:00", "end": "2027-09-15T05:00:00+02:00"
   }]
 }
 ```
@@ -111,6 +118,34 @@ curl -s -H "$AUTH" "$BASE/api/stops/39/departures?lines=4,15&minutes=30&limit=10
 - `source` says where `expected` comes from: `gtt` (GTT's own prediction, urban runs only), `otp` (OpenTripPlanner's real time) or `scheduled` (the timetable). GTT's prediction is used when it is less than 3 minutes old and within 60 minutes of the scheduled time; otherwise OpenTripPlanner's. A run cancelled by either source has `canceled: true`.
 - `minutes` is rounded down and never negative.
 - `stale: true` means the upstream is failing and this is the last good data (at most 2 minutes old, see `fetched_at`).
+- `alerts` are GTT's active alerts for the stop, whatever the `lines` filter, in the shape of [GTT alerts](#gtt-alerts); empty when GTT's data is disabled.
+
+## GTT alerts
+
+```bash
+curl -s -H "$AUTH" "$BASE/api/alerts?stop=39&line=9"
+```
+
+GTT's active service alerts (detours, limited lines, suspended stops), read from GTT every 5 minutes.
+
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| `stop` | none | the alerts of a stop: those that list it, and those that list no stop but name a line serving it. A code (`39`) or a full id (`gtt:39`); `stop_not_found` when the stop is not in the index |
+| `line` | none | the alerts naming a line (`9`, `68+`), case-insensitive; with `stop`, those of that stop naming the line |
+
+Without parameters, every active alert, including those that name neither a stop nor a line.
+
+```json
+{
+  "generated_at": "2026-11-04T16:24:10+01:00",
+  "read_at": "2026-11-04T16:22:52+01:00",
+  "alerts": [{"id": "6aa2a2bc22bb480c377bee29", "title": "Linea 9 deviata in entrambe le direzioni.", "lines": [{"id": "gtt:9U", "name": "9", "mode": "TRAM"}], "...": "..."}]
+}
+```
+
+- `read_at`: when the alerts were read from GTT; `null` before the first read or when GTT's data is disabled (`alerts` is then empty). When a read fails, the last alerts stay.
+- Each alert: `id`, `title` and `description` (GTT's Italian text; the description keeps its line breaks), `url` (GTT's page, `http` or `https` only, else `null`), `lines` (sorted, with name and mode from the stop index; `mode` is `null` for a line no stop serves), and `start` and `end` of the active period that includes now (`null` when open-ended).
+- An alert is shown only while one of its periods includes now. At a stop, two alerts with the same title and text are shown once.
 
 ## Favorites
 
@@ -161,7 +196,7 @@ Every favorite, in order, with its next departures: what the web app's home scre
 }
 ```
 
-- Each favorite is shown as in `GET /api/favorites` (`stop` abridged here) plus `departures` (same fields as the stop departures, filtered by the favorite's `lines`), `stale` and `error`.
+- Each favorite is shown as in `GET /api/favorites` (`stop` abridged here) plus `departures` (same fields as the stop departures, filtered by the favorite's `lines`), `stale` and `error`. GTT's alerts are not included: ask `/api/alerts?stop=...` for them.
 - When one stop fails, that favorite has `departures: []` and `error: {"code", "message"}` (codes as in [Errors](#errors)); the others are unaffected and the response is still 200.
 - Stops are read in parallel and through the same cache as `/api/stops/{stop}/departures`.
 
@@ -185,12 +220,22 @@ Version, current time, `upstream` (`ok`, last success, last failure and error, c
 "gtt": {
   "trip_updates": {"ok": true, "last_success": "2026-11-04T09:55:01Z", "last_failure": null, "last_error": null, "consecutive_failures": 0},
   "feed": {"runs": 388, "newest_update": "2026-11-04T09:55:01Z"},
-  "comparison": {"date": "2026-11-04", "used": 10, "mismatches": 0, "compared": 9, "median_difference_seconds": 185}
+  "comparison": {"date": "2026-11-04", "used": 10, "mismatches": 0, "compared": 9, "median_difference_seconds": 185},
+  "alerts": {
+    "feed": {"ok": true, "last_success": "2026-11-04T15:22:51Z", "...": "..."},
+    "read": {"read_at": "2026-11-04T15:22:52Z", "alerts": 121, "unknown_stops": 52}
+  },
+  "static_data": {
+    "download": {"ok": true, "last_success": "2026-11-04T15:22:51Z", "...": "..."},
+    "data": {"checked_at": "2026-11-04T15:22:51Z", "version": "2026-11-01T02:26:59Z", "stops": 7051}
+  }
 }
 ```
 
 - `trip_updates`: outcome of the recent reads of GTT's trip updates, in the same shape as `upstream`.
 - `feed`: the last trip updates read (`null` until the first success): runs in the feed and the most recent update of any run.
+- `alerts`: `feed` is the outcome of the recent reads of the alerts; `read` (`null` until the first success) counts the alerts in the feed, active or not, and `unknown_stops`, the GTT stop ids named by alerts but missing from the static data (temporary stops, or no static data yet).
+- `static_data`: GTT's `stops.txt`, which links alerts to stops; `null` when disabled (`GTT_GTFS_URL` empty). `download` is the outcome of the recent checks; `data` (`null` until the first download) has the last successful check, `version` (when GTT built the archive, its `Last-Modified`) and the number of stops.
 - `comparison`: today (Europe/Rome), one entry per run and stop, so reloading a page does not count twice. `used`: departures that took GTT's prediction; `mismatches`: GTT predictions set aside as implausible; `compared`: used departures where OpenTripPlanner had a prediction too; `median_difference_seconds`: median of their absolute differences.
 
 ## Errors

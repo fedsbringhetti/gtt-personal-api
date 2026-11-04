@@ -22,6 +22,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 12 | [Installable and offline](12-pwa-offline.md): InTime's icon and manifest, service worker, last data offline, new version prompt | 2 | [#17](https://github.com/fedsbringhetti/gtt-personal-api/pull/17) |
 | 13 | [Info screen](13-info-screen.md): version, real-time health, stop list, installing InTime | 2 | [#18](https://github.com/fedsbringhetti/gtt-personal-api/pull/18) |
 | 14 | [GTT predictions](14-gtt-predictions.md): GTFS Realtime without `protoc`, trip updates, merge rules, `source`, comparison with OpenTripPlanner, GTT rows on the info screen | 3 | [#21](https://github.com/fedsbringhetti/gtt-personal-api/pull/21) |
+| 15 | [GTT alerts](15-gtt-alerts.md): GTT's static data with conditional requests, alerts linked by stop or by line, `/api/alerts`, the alerts banner, the static data row on the info screen | 3 | to be opened |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
@@ -64,9 +65,9 @@ Open `http://localhost:5173`: Vite reloads the page on every save and forwards `
 ### Tests
 
 - **Unit tests** sit at the bottom of each source file in a `#[cfg(test)] mod tests` block. They test pure functions: times, normalization, ranking helpers, config parsing, sync scheduling, token parsing.
-- **Integration tests** live in `tests/`, one file per area (`departures.rs`, `gtt.rs`, `stops.rs`, `favorites.rs`, `status.rs`, `auth.rs`, `health.rs`, `web.rs`). They build the real router with an in-memory database, a fixed clock and a fake upstream server (`wiremock`), then send HTTP requests to it. GTT's feeds are off unless a test sets `Options::gtt_url` to a fake GTT server.
+- **Integration tests** live in `tests/`, one file per area (`departures.rs`, `gtt.rs`, `alerts.rs`, `gtt_static.rs`, `stops.rs`, `favorites.rs`, `status.rs`, `auth.rs`, `health.rs`, `web.rs`). They build the real router with an in-memory database, a fixed clock and a fake upstream server (`wiremock`), then send HTTP requests to it. GTT's feeds are off unless a test sets `Options::gtt_url` to a fake GTT server; GTT's static data also needs `Options::gtt_gtfs_url`. Background tasks are not started: tests call `TestApp::alerts` (`refresh`) and `TestApp::gtt_static` (`check`) themselves.
 - **Shared helpers** are in `tests/common/mod.rs`: `test_app` / `test_app_with` (app with options), `synced_app` (app with the stop index already loaded), `get`, `send`, `request`, `get_text` (for responses that are not JSON).
-- **Fixtures** in `tests/fixtures/` are real upstream responses saved to files: `stop_39.json` (departures at Porta Nuova) and `all_stops.json` (44 real stops). `tests/fixtures/gtt/` holds GTT's trip updates (`trip_update.pb`, binary) and OpenTripPlanner's departures at stop 39 (`stop_39.json`), read at the same moment on 2026-11-04 at 10:46:30, so the merge can be tested on real data. `tests/fixtures/web/` is a tiny stand-in for the built web app, so the Rust tests never need Node.
+- **Fixtures** in `tests/fixtures/` are real upstream responses saved to files: `stop_39.json` (departures at Porta Nuova) and `all_stops.json` (44 real stops). `tests/fixtures/gtt/` holds GTT's trip updates (`trip_update.pb`, binary) and OpenTripPlanner's departures at stop 39 (`stop_39.json`), read at the same moment on 2026-11-04 at 10:46:30, so the merge can be tested on real data; GTT's alerts (`alerts.pb`, 119 alerts, read the same day at 16:03:58); and the real rows of GTT's `stops.txt` for 26 of the stops in `all_stops.json` plus 2 stations (`stops.txt`), zipped by the tests. `tests/fixtures/web/` is a tiny stand-in for the built web app, so the Rust tests never need Node.
 - **Web app tests** are Vitest files next to the code they test (`web/src/lib/status.test.ts`), run with `npm test` in `web/`.
 
 ### Common changes

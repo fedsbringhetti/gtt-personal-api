@@ -234,3 +234,4 @@ Stop and start again: the log shows only `next stop sync at ...04:00`, without a
 
 - [Step 4](04-favorites.md) reads stop details from the index for each favorite.
 - [Step 5](05-robustness.md): `/api/status` shows the last sync and stop count; sync failures are recorded in the upstream health.
+- [Chapter 15](15-gtt-alerts.md): `StopIndex::lines` names GTT's alert lines; `next_sync_at` and `retry_delay` also schedule the nightly check of GTT's static data.

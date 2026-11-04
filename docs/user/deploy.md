@@ -13,7 +13,7 @@ The service runs as a single container on the home server (Orange Pi 5, ARM64, D
 | Ports | host `8100` → container `8080` (host 8080 is taken) |
 | Folder on the server | `/home/federico/gtt-personal-api/` |
 | Bind mount | `./data` → `/data` (SQLite: `gtt.db`, `gtt.db-wal`, `gtt.db-shm`) |
-| Environment | from `.env`: `API_TOKEN`; optional `RUST_LOG`, `STOPS_SYNC_TIME`, `DEFAULT_FEEDS`, `UPSTREAM_URL`, `UPSTREAM_TIMEOUT_SECS`, `DEPARTURES_CACHE_SECS`, `GTT_REALTIME_URL`, `GTT_TRIP_UPDATES_CACHE_SECS`. Set by the image or compose: `BIND_ADDR`, `DATA_DIR`, `TZ` |
+| Environment | from `.env`: `API_TOKEN`; optional `RUST_LOG`, `STOPS_SYNC_TIME`, `DEFAULT_FEEDS`, `UPSTREAM_URL`, `UPSTREAM_TIMEOUT_SECS`, `DEPARTURES_CACHE_SECS`, `GTT_REALTIME_URL`, `GTT_TRIP_UPDATES_CACHE_SECS`, `GTT_ALERTS_POLL_SECS`, `GTT_GTFS_URL`. Set by the image or compose: `BIND_ADDR`, `DATA_DIR`, `TZ` |
 | Health check | `gtt-personal-api healthcheck` (calls `/health`), every 30 s |
 | User in the container | `app`, uid 10001 |
 
