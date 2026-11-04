@@ -30,6 +30,8 @@ pub struct Stoptime {
     /// `SCHEDULED`, `UPDATED`, `CANCELED`, ...
     pub realtime_state: Option<String>,
     pub service_day: i64,
+    /// Position of the stop in the run; GTT's trip updates use the same numbers.
+    pub stop_sequence: Option<u32>,
     pub headsign: Option<String>,
     pub trip: Trip,
 }

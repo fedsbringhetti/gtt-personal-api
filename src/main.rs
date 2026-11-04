@@ -11,6 +11,7 @@ use gtt_personal_api::{
     db,
     departures::DeparturesService,
     favorites::FavoriteStore,
+    gtt::GttRealtime,
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
     upstream::UpstreamClient,
@@ -68,6 +69,19 @@ async fn serve(config: Config) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    let gtt = match &config.gtt_realtime_url {
+        Some(url) => match GttRealtime::new(url, config.gtt_trip_updates_cache_ttl) {
+            Ok(gtt) => Some(Arc::new(gtt)),
+            Err(err) => {
+                tracing::error!("cannot create the GTT client: {err}");
+                return ExitCode::FAILURE;
+            }
+        },
+        None => {
+            tracing::info!("GTT_REALTIME_URL is empty: departures use OpenTripPlanner only");
+            None
+        }
+    };
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
     let stops = StopIndex::new(pool.clone());
     let favorites = FavoriteStore::new(pool);
@@ -89,6 +103,7 @@ async fn serve(config: Config) -> ExitCode {
     let state = AppState {
         departures: Arc::new(DeparturesService::new(
             upstream,
+            gtt.clone(),
             config.departures_cache_ttl,
             clock.clone(),
         )),
@@ -96,6 +111,7 @@ async fn serve(config: Config) -> ExitCode {
         favorites,
         default_feeds: config.default_feeds.clone(),
         upstream_health,
+        gtt,
         api_token: config.api_token.clone(),
         clock,
         web,

@@ -10,6 +10,7 @@ query StopDepartures($id: String!, $timeRange: Int!, $numberOfDepartures: Int!) 
       realtime
       realtimeState
       serviceDay
+      stopSequence
       headsign
       trip {
         gtfsId

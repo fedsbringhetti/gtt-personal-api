@@ -14,6 +14,7 @@ use gtt_personal_api::{
     db,
     departures::DeparturesService,
     favorites::FavoriteStore,
+    gtt::GttRealtime,
     stops::{Feeds, StopIndex, sync::sync_once},
     time::{Clock, FixedClock},
     upstream::UpstreamClient,
@@ -47,6 +48,8 @@ pub struct Options {
     pub cache_ttl: Duration,
     pub api_token: Option<&'static str>,
     pub web: WebAssets,
+    /// Folder of GTT's feeds; `None` disables GTT, as in most tests.
+    pub gtt_url: Option<String>,
 }
 
 impl Default for Options {
@@ -55,6 +58,7 @@ impl Default for Options {
             cache_ttl: Duration::from_secs(20),
             api_token: None,
             web: WebAssets::from_embed::<FixtureWeb>(),
+            gtt_url: None,
         }
     }
 }
@@ -78,9 +82,13 @@ pub async fn test_app_with(
     let pool = db::connect_in_memory().await.unwrap();
     let stops = StopIndex::new(pool.clone());
     let clock: Arc<dyn Clock> = Arc::new(FixedClock(now));
+    let gtt = options.gtt_url.as_ref().map(|url| {
+        Arc::new(GttRealtime::new(&url.parse().unwrap(), Duration::from_secs(20)).unwrap())
+    });
     let router = api::router(AppState {
         departures: Arc::new(DeparturesService::new(
             upstream.clone(),
+            gtt.clone(),
             options.cache_ttl,
             clock.clone(),
         )),
@@ -88,6 +96,7 @@ pub async fn test_app_with(
         favorites: FavoriteStore::new(pool),
         default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
         upstream_health: upstream.health(),
+        gtt,
         api_token: options.api_token.map(|token| token.parse().unwrap()),
         clock,
         web: options.web,

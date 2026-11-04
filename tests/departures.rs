@@ -49,6 +49,7 @@ async fn returns_departures_for_a_stop() {
             "realtime": true,
             "canceled": false,
             "trip_id": "gtt:28459721U",
+            "source": "otp",
             "minutes": 0
         })
     );

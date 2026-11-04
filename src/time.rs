@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, TimeDelta, Utc};
 use chrono_tz::Tz;
 
 pub const TIME_ZONE: Tz = chrono_tz::Europe::Rome;
@@ -11,6 +11,13 @@ pub const TIME_ZONE: Tz = chrono_tz::Europe::Rome;
 pub fn service_time(service_day: i64, seconds: i64) -> Option<DateTime<Tz>> {
     DateTime::from_timestamp(service_day.checked_add(seconds)?, 0)
         .map(|time| time.with_timezone(&TIME_ZONE))
+}
+
+/// The service date of `service_day` (noon minus 12 hours, see `service_time`): the date at
+/// its noon, in local time. GTT's trip updates identify a run by trip id and this date.
+pub fn service_date(service_day: i64) -> Option<NaiveDate> {
+    let noon = DateTime::from_timestamp(service_day, 0)? + TimeDelta::hours(12);
+    Some(noon.with_timezone(&TIME_ZONE).date_naive())
 }
 
 /// Source of the current time, replaceable in tests.
@@ -39,7 +46,7 @@ impl Clock for FixedClock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDate, TimeDelta, TimeZone};
+    use chrono::TimeZone;
 
     /// `serviceDay` as OTP computes it: noon on the service date, minus 12 hours.
     fn service_day(year: i32, month: u32, day: u32) -> i64 {
@@ -86,6 +93,24 @@ mod tests {
         let day = service_day(2026, 10, 25);
         assert_eq!(local(day, 8, 0), "2026-10-25T08:00:00+01:00");
         assert_eq!(local(day, 23, 30), "2026-10-25T23:30:00+01:00");
+    }
+
+    #[test]
+    fn service_date_from_service_day() {
+        let date = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        assert_eq!(
+            service_date(service_day(2026, 10, 29)),
+            Some(date(2026, 10, 29))
+        );
+        // Daylight saving days: the service day starts at 23:00 or 01:00 of the day before.
+        assert_eq!(
+            service_date(service_day(2026, 3, 29)),
+            Some(date(2026, 3, 29))
+        );
+        assert_eq!(
+            service_date(service_day(2026, 10, 25)),
+            Some(date(2026, 10, 25))
+        );
     }
 
     #[test]

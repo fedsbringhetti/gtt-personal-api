@@ -36,11 +36,11 @@ pub enum UpstreamError {
 impl UpstreamError {
     /// Failures worth one more try: connection problems and overloaded gateways. Timeouts are
     /// not retried, since they already took the whole timeout.
-    fn is_transient(&self) -> bool {
+    pub(crate) fn is_transient(&self) -> bool {
         matches!(self, Self::Unreachable(_) | Self::Status(502..=504))
     }
 
-    fn from_reqwest(err: reqwest::Error) -> Self {
+    pub(crate) fn from_reqwest(err: reqwest::Error) -> Self {
         if err.is_timeout() {
             Self::Timeout
         } else {
