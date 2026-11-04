@@ -196,3 +196,4 @@ Compare with the same stop on muoversiatorino.it: `https://www.muoversiatorino.i
 
 - [Step 3](03-stop-index.md) moves the code fallback to `stops::display_code`, shared with the index.
 - [Step 5](05-robustness.md) adds a retry on transient failures, `fetched_at`, and `stale: true` responses from a "last good" cache.
+- [Chapter 14](14-gtt-predictions.md): the query also asks for `stopSequence`; each departure gets `source`, and `DeparturesService::get` merges GTT's predictions into OpenTripPlanner's departures.

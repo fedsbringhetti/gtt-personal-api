@@ -8,6 +8,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 
 - **stop search by name** (the upstream name search is broken) and by position, on a local copy of all ~19,400 stops;
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
+- **GTT's own predictions** for urban runs, read from GTT's open data and merged into the departures (Phase 3);
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
 - **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2).
@@ -33,6 +34,9 @@ It is a single Rust binary, with the web app embedded in it and an SQLite databa
                                            ▼
                                 upstream client ──► OpenTripPlanner GraphQL
                                 (retry, health)      (muoversiatorino.it)
+
+  departures ──► GTT client ──────────────────────► GTT GTFS Realtime
+                 (cache 20 s, retry, health)          (trip_update.aspx)
 ```
 
 `main.rs` reads the configuration, opens the database (applying migrations), starts the background sync task and serves HTTP until Ctrl+C or SIGTERM, finishing requests in progress.
@@ -60,6 +64,19 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 4. The result is cached for `DEPARTURES_CACHE_SECS`, and also kept for 2 minutes as "last good" data.
 5. Filters (lines, window, limit) are applied to the cached data, so changing them does not call the upstream again.
 6. If the upstream fails and "last good" data exists, it is returned with `stale: true`.
+7. GTT's predictions are merged in at every request (next section); the cached data stays OpenTripPlanner's.
+
+### GTT predictions
+
+GTT publishes real-time predictions for its urban runs as GTFS Realtime (Protocol Buffers over HTTP). `src/gtt/` reads them and `departures.rs` merges them into OpenTripPlanner's departures (Phase 3, decision N):
+
+1. `DeparturesService::get` asks OpenTripPlanner (its cache) and GTT (`GttRealtime::trip_updates`, its own cache of 20 seconds) in parallel. GTT failing never fails a request: the failure is recorded, GTT is left alone for 30 seconds, and the departures use OpenTripPlanner alone.
+2. The feed is indexed by run: GTT's trip id (ours without `gtt:`) and its service date. A departure finds its run through `trip_id` and `service_date`, and its stop through `stopSequence`, which matches GTT's `stop_sequence`.
+3. The prediction at the stop is used; when the stop has none, the delay of the last earlier stop carries over. It is ignored when the run's update is older than 3 minutes, when only later stops have updates (already passed), or when the earlier stop has an absolute time (no delay to carry). A time more than 60 minutes from the scheduled one counts as a mismatch and OpenTripPlanner is used.
+4. A run cancelled by GTT or by OpenTripPlanner is cancelled. Each departure says where its time comes from in `source` (`gtt`, `otp`, `scheduled`).
+5. Every outcome is recorded once per run and stop for the day (`comparison.rs`), so `/api/status` can show how often GTT's predictions are used, set aside, and how far they are from OpenTripPlanner's.
+
+The Rust types for the messages are generated from the official `gtfs-realtime.proto` by `tools/gtfs-rt-codegen` and kept in `src/gtt/proto.rs`, so building the service needs no protobuf compiler.
 
 ### Stop index
 
@@ -98,7 +115,12 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/upstream/mod.rs` | GraphQL client: queries, errors, retry |
 | `src/upstream/queries.rs`, `types.rs` | query texts and response shapes |
 | `src/upstream/health.rs` | outcome of recent upstream calls |
-| `src/departures.rs` | departures: conversion, sorting, filtering, cache, stale fallback |
+| `src/departures.rs` | departures: conversion, sorting, filtering, cache, stale fallback, merge with GTT's predictions |
+| `src/gtt/mod.rs` | GTT's real-time client: reading, cache, retry, pause after a failure, health |
+| `src/gtt/trip_updates.rs` | trip updates indexed by run; the prediction for one stop of a run |
+| `src/gtt/comparison.rs` | today's comparison between GTT and OpenTripPlanner |
+| `src/gtt/proto.rs` | GTFS Realtime types, generated (do not edit) |
+| `tools/gtfs-rt-codegen/` | the generator of `src/gtt/proto.rs`, a separate Cargo project |
 | `src/stops/mod.rs` | stop index storage, `Feeds`, line sorting |
 | `src/stops/normalize.rs` | name normalization and abbreviations |
 | `src/stops/search.rs` | search ranking and nearby stops |
@@ -132,9 +154,10 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 
 - **Unofficial upstream**: it can change or disappear. `/api/status` and the logs show failures; a schema change shows up as a GraphQL validation error.
 - **No vehicle positions and no service alerts** in the upstream API. Both come from GTT's open data in Phase 3 ([plan/phase-3.md](plan/phase-3.md)).
+- **GTT's predictions cover urban runs only**, the next few stops of each run, and arrivals only (used as the departure time). Runs not yet started have no prediction. On 2026-11-04 they were mostly earlier than OpenTripPlanner's, by about 3 minutes (median); `/api/status` keeps counting to judge them.
 - **Search**: stops whose name lacks the searched words but whose description has them rank last (e.g. `pza castello` lists towns' "P.ZA CASTELLO" stops before Turin's "CASTELLO").
 - **Stale data** covers only 2 minutes of upstream failure; after that, departures return an error.
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Next: Phase 3, GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).
+Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Phase 3 is in progress: GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); GTT's predictions are done (step 1). Then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).

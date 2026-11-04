@@ -87,4 +87,4 @@ Open `http://localhost:5173/info`. To see the failing state, stop the network of
 
 ## Later changes
 
-None yet.
+- [Chapter 14](14-gtt-predictions.md): rows for GTT's predictions and for today's difference between GTT and OpenTripPlanner; `describeHealth` shared by the two real-time rows.
