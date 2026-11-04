@@ -1,4 +1,5 @@
-//! GTT's own open data: real-time trip updates for urban runs (Phase 3, decision N).
+//! GTT's own open data: real-time trip updates for urban runs (Phase 3, decision N), service
+//! alerts (decision O) and the static data that links alerts to stops (decision Q).
 //!
 //! The feeds are plain HTTP GETs returning GTFS Realtime messages (Protocol Buffers). Every
 //! response is generated on request, so it differs byte by byte even when nothing changed:
@@ -11,10 +12,12 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use moka::future::Cache;
+use prost::Message;
 use serde::Serialize;
 
 use crate::upstream::{UpstreamError, health::UpstreamHealth};
 
+pub mod alerts;
 pub mod comparison;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, rustdoc::all, missing_docs)]
@@ -37,8 +40,10 @@ const PAUSE_AFTER_FAILURE: Duration = Duration::from_secs(30);
 pub struct GttRealtime {
     http: reqwest::Client,
     trip_updates_url: reqwest::Url,
+    alerts_url: reqwest::Url,
     cache: Cache<(), Arc<TripUpdates>>,
     health: Arc<UpstreamHealth>,
+    alerts_health: Arc<UpstreamHealth>,
     paused_until: Mutex<Option<Instant>>,
     latest: Mutex<Option<FeedSummary>>,
     /// Today's comparison with OpenTripPlanner, filled while merging departures.
@@ -69,22 +74,28 @@ impl GttRealtime {
         if !base_url.path().ends_with('/') {
             base_url.set_path(&format!("{}/", base_url.path()));
         }
-        let trip_updates_url = base_url
-            .join("trip_update.aspx")
-            .expect("a relative path always joins");
+        let feed = |name: &str| base_url.join(name).expect("a relative path always joins");
         Ok(Self {
             http,
-            trip_updates_url,
+            trip_updates_url: feed("trip_update.aspx"),
+            alerts_url: feed("alerts.aspx"),
             cache: Cache::builder().time_to_live(cache_ttl).build(),
             health: Arc::default(),
+            alerts_health: Arc::default(),
             paused_until: Mutex::new(None),
             latest: Mutex::new(None),
             comparisons: Comparisons::default(),
         })
     }
 
+    /// Outcome of the recent reads of the trip updates.
     pub fn health(&self) -> Arc<UpstreamHealth> {
         self.health.clone()
+    }
+
+    /// Outcome of the recent reads of the alerts.
+    pub fn alerts_health(&self) -> Arc<UpstreamHealth> {
+        self.alerts_health.clone()
     }
 
     pub fn latest(&self) -> Option<FeedSummary> {
@@ -112,14 +123,10 @@ impl GttRealtime {
     }
 
     async fn fetch(&self) -> Result<Arc<TripUpdates>, UpstreamError> {
-        let mut result = self.fetch_once().await;
-        if let Err(err) = &result
-            && err.is_transient()
-        {
-            tracing::debug!("retrying after transient GTT failure: {err}");
-            tokio::time::sleep(RETRY_DELAY).await;
-            result = self.fetch_once().await;
-        }
+        let result = self.read(&self.trip_updates_url).await.and_then(|body| {
+            TripUpdates::decode(&body)
+                .map_err(|err| UpstreamError::InvalidResponse(err.to_string()))
+        });
         match &result {
             Ok(updates) => {
                 self.health.record_success(Utc::now());
@@ -133,10 +140,37 @@ impl GttRealtime {
         result.map(Arc::new)
     }
 
-    async fn fetch_once(&self) -> Result<TripUpdates, UpstreamError> {
+    /// The current alerts feed, read now (the caller keeps it: alerts are read every few
+    /// minutes, not on demand).
+    pub async fn alerts(&self) -> Result<proto::FeedMessage, UpstreamError> {
+        let result = self.read(&self.alerts_url).await.and_then(|body| {
+            proto::FeedMessage::decode(body.as_slice())
+                .map_err(|err| UpstreamError::InvalidResponse(err.to_string()))
+        });
+        match &result {
+            Ok(_) => self.alerts_health.record_success(Utc::now()),
+            Err(err) => self.alerts_health.record_failure(Utc::now(), err),
+        }
+        result
+    }
+
+    /// One feed's body, with a single retry after a transient failure.
+    async fn read(&self, url: &reqwest::Url) -> Result<Vec<u8>, UpstreamError> {
+        let mut result = self.read_once(url).await;
+        if let Err(err) = &result
+            && err.is_transient()
+        {
+            tracing::debug!("retrying after transient GTT failure: {err}");
+            tokio::time::sleep(RETRY_DELAY).await;
+            result = self.read_once(url).await;
+        }
+        result
+    }
+
+    async fn read_once(&self, url: &reqwest::Url) -> Result<Vec<u8>, UpstreamError> {
         let response = self
             .http
-            .get(self.trip_updates_url.clone())
+            .get(url.clone())
             .send()
             .await
             .map_err(UpstreamError::from_reqwest)?;
@@ -148,7 +182,7 @@ impl GttRealtime {
             .bytes()
             .await
             .map_err(UpstreamError::from_reqwest)?;
-        TripUpdates::decode(&body).map_err(|err| UpstreamError::InvalidResponse(err.to_string()))
+        Ok(body.into())
     }
 }
 

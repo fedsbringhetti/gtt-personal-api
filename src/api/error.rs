@@ -118,3 +118,10 @@ impl From<FavoritesError> for ApiError {
         Self::Internal
     }
 }
+
+impl From<sqlx::Error> for ApiError {
+    fn from(err: sqlx::Error) -> Self {
+        tracing::error!("database: {err}");
+        Self::Internal
+    }
+}

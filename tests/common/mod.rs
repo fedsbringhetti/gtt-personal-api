@@ -14,7 +14,7 @@ use gtt_personal_api::{
     db,
     departures::DeparturesService,
     favorites::FavoriteStore,
-    gtt::GttRealtime,
+    gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
     stops::{Feeds, StopIndex, sync::sync_once},
     time::{Clock, FixedClock},
     upstream::UpstreamClient,
@@ -35,6 +35,10 @@ pub struct TestApp {
     pub router: Router,
     pub stops: StopIndex,
     pub upstream: UpstreamClient,
+    /// Set when `Options::gtt_url` is: tests read the alerts with `refresh`.
+    pub alerts: Option<Arc<AlertsService>>,
+    /// Set when `Options::gtt_url` and `Options::gtt_gtfs_url` are.
+    pub gtt_static: Option<GttStatic>,
 }
 
 /// A tiny stand-in for the built web app: `index.html` and one hashed script.
@@ -50,6 +54,8 @@ pub struct Options {
     pub web: WebAssets,
     /// Folder of GTT's feeds; `None` disables GTT, as in most tests.
     pub gtt_url: Option<String>,
+    /// GTT's GTFS static archive; used only with `gtt_url`.
+    pub gtt_gtfs_url: Option<String>,
 }
 
 impl Default for Options {
@@ -59,6 +65,7 @@ impl Default for Options {
             api_token: None,
             web: WebAssets::from_embed::<FixtureWeb>(),
             gtt_url: None,
+            gtt_gtfs_url: None,
         }
     }
 }
@@ -85,6 +92,17 @@ pub async fn test_app_with(
     let gtt = options.gtt_url.as_ref().map(|url| {
         Arc::new(GttRealtime::new(&url.parse().unwrap(), Duration::from_secs(20)).unwrap())
     });
+    let gtt_static = match (&gtt, &options.gtt_gtfs_url) {
+        (Some(_), Some(url)) => Some(GttStatic::new(pool.clone(), url.parse().unwrap()).unwrap()),
+        _ => None,
+    };
+    let alerts = gtt.as_ref().map(|gtt| {
+        Arc::new(AlertsService::new(
+            gtt.clone(),
+            stops.clone(),
+            gtt_static.clone(),
+        ))
+    });
     let router = api::router(AppState {
         departures: Arc::new(DeparturesService::new(
             upstream.clone(),
@@ -97,6 +115,8 @@ pub async fn test_app_with(
         default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
         upstream_health: upstream.health(),
         gtt,
+        alerts: alerts.clone(),
+        gtt_static: gtt_static.clone(),
         api_token: options.api_token.map(|token| token.parse().unwrap()),
         clock,
         web: options.web,
@@ -105,6 +125,8 @@ pub async fn test_app_with(
         router,
         stops,
         upstream,
+        alerts,
+        gtt_static,
     }
 }
 

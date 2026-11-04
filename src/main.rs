@@ -13,6 +13,7 @@ use gtt_personal_api::{
     favorites::FavoriteStore,
     gtt::{
         GttRealtime,
+        alerts::{self, AlertsService},
         static_data::{self, GttStatic},
     },
     stops::{StopIndex, sync},
@@ -105,11 +106,27 @@ async fn serve(config: Config) -> ExitCode {
         },
         _ => None,
     };
+    let alerts = gtt.as_ref().map(|gtt| {
+        Arc::new(AlertsService::new(
+            gtt.clone(),
+            stops.clone(),
+            gtt_static.clone(),
+        ))
+    });
+    if let Some(alerts) = &alerts {
+        alerts::spawn(alerts.clone(), clock.clone(), config.gtt_alerts_poll);
+    }
     if let Some(gtt_static) = &gtt_static {
         let (check_time, _) = config
             .stops_sync_time
             .overflowing_add_signed(static_data::CHECK_AFTER_STOPS_SYNC);
-        static_data::spawn(gtt_static.clone(), clock.clone(), check_time, || {});
+        // New static data can link alerts to more stops: read them again at once.
+        let alerts = alerts.clone();
+        static_data::spawn(gtt_static.clone(), clock.clone(), check_time, move || {
+            if let Some(alerts) = &alerts {
+                alerts.refresh_soon();
+            }
+        });
     }
 
     if config.api_token.is_none() {
@@ -132,6 +149,8 @@ async fn serve(config: Config) -> ExitCode {
         default_feeds: config.default_feeds.clone(),
         upstream_health,
         gtt,
+        alerts,
+        gtt_static,
         api_token: config.api_token.clone(),
         clock,
         web,

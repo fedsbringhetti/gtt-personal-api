@@ -157,6 +157,24 @@ impl StopIndex {
         row.map(StopInfo::try_from).transpose()
     }
 
+    /// Every line serving at least one stop of `feed`, once per id: names and modes for
+    /// GTT's alerts, which know lines by id only.
+    pub async fn lines(&self, feed: &str) -> Result<Vec<LineRef>, IndexError> {
+        let rows: Vec<(String, String, Option<String>)> = sqlx::query_as(
+            "SELECT DISTINCT json_extract(line.value, '$.id'), json_extract(line.value, '$.name'),
+                    json_extract(line.value, '$.mode')
+             FROM stops, json_each(stops.lines) AS line
+             WHERE stops.feed = ?",
+        )
+        .bind(feed)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(id, name, mode)| LineRef { id, name, mode })
+            .collect())
+    }
+
     /// Replaces the whole index in one transaction: readers see either the old or the new data.
     pub async fn replace_all(
         &self,
@@ -280,7 +298,7 @@ fn lines_from_routes(routes: Vec<types::RouteRef>) -> Vec<LineRef> {
 }
 
 /// Compares the leading number first, then the rest: `9` < `9B` < `15` < `M1S`.
-fn natural_cmp(a: &str, b: &str) -> Ordering {
+pub(crate) fn natural_cmp(a: &str, b: &str) -> Ordering {
     fn split(s: &str) -> (Option<u32>, &str) {
         let digits = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
         (s[..digits].parse().ok(), &s[digits..])
