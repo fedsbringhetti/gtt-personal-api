@@ -1,0 +1,14 @@
+# Generates src/gtt/proto.rs from the official GTFS Realtime definition, so the service needs no
+# protobuf compiler to build (Phase 3, decision U). Not part of the service build.
+[package]
+name = "gtfs-rt-codegen"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Its own workspace: building the service never compiles this tool.
+[workspace]
+
+[dependencies]
+prost-build = "0.14"
+protox = "0.10"
