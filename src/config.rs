@@ -11,6 +11,8 @@ const DEFAULT_DEPARTURES_CACHE_SECS: &str = "20";
 const DEFAULT_DATA_DIR: &str = "data";
 const DEFAULT_STOPS_SYNC_TIME: &str = "04:00";
 const DEFAULT_FEEDS: &str = "gtt";
+const DEFAULT_GTT_REALTIME_URL: &str = "https://percorsieorari.gtt.to.it/das_gtfsrt/";
+const DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS: &str = "20";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -25,6 +27,10 @@ pub struct Config {
     pub default_feeds: Feeds,
     /// When set, `/api/*` requires `Authorization: Bearer <token>`.
     pub api_token: Option<ApiToken>,
+    /// Folder of GTT's real-time feeds. `None` disables GTT's data:
+    /// departures use OpenTripPlanner alone.
+    pub gtt_realtime_url: Option<reqwest::Url>,
+    pub gtt_trip_updates_cache_ttl: Duration,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -75,8 +81,31 @@ impl Config {
                 })?),
                 None => None,
             },
+            gtt_realtime_url: parse_with(
+                &lookup,
+                "GTT_REALTIME_URL",
+                DEFAULT_GTT_REALTIME_URL,
+                parse_optional_url,
+            )?,
+            gtt_trip_updates_cache_ttl: Duration::from_secs(parse_or_default(
+                &lookup,
+                "GTT_TRIP_UPDATES_CACHE_SECS",
+                DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS,
+            )?),
         })
     }
+}
+
+/// An empty value means "disabled".
+fn parse_optional_url(value: &str) -> Result<Option<reqwest::Url>, String> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+    value
+        .parse::<reqwest::Url>()
+        .map(Some)
+        .map_err(|err| err.to_string())
 }
 
 fn parse_or_default<T>(
@@ -130,6 +159,37 @@ mod tests {
         );
         assert_eq!(config.default_feeds, Feeds::Only(vec!["gtt".to_owned()]));
         assert_eq!(config.api_token, None);
+        assert_eq!(
+            config.gtt_realtime_url.unwrap().as_str(),
+            DEFAULT_GTT_REALTIME_URL
+        );
+        assert_eq!(config.gtt_trip_updates_cache_ttl, Duration::from_secs(20));
+    }
+
+    #[test]
+    fn reads_gtt_settings() {
+        let config = config_from(&[
+            ("GTT_REALTIME_URL", "http://localhost:9999/feeds"),
+            ("GTT_TRIP_UPDATES_CACHE_SECS", "5"),
+        ])
+        .unwrap();
+        assert_eq!(
+            config.gtt_realtime_url.unwrap().as_str(),
+            "http://localhost:9999/feeds"
+        );
+        assert_eq!(config.gtt_trip_updates_cache_ttl, Duration::from_secs(5));
+
+        let disabled = config_from(&[("GTT_REALTIME_URL", " ")]).unwrap();
+        assert_eq!(disabled.gtt_realtime_url, None);
+
+        let err = config_from(&[("GTT_REALTIME_URL", "not a url")]).unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::Invalid {
+                var: "GTT_REALTIME_URL",
+                ..
+            }
+        ));
     }
 
     #[test]

@@ -194,3 +194,4 @@ With an unreachable upstream, a departures request shows the retry in the logs, 
 - [Step 6](06-docker.md) uses the open `/health` for the Docker health check.
 - [Step 7](07-web-skeleton.md) serves the web app outside the token check: it holds no data, and its API calls go through the check.
 - Phase 3 builds the upstream alerts on `UpstreamHealth`.
+- [Chapter 14](14-gtt-predictions.md): GTT's client reuses `UpstreamError` and `UpstreamHealth` and the same single retry; `/api/status` gets a `gtt` entry.

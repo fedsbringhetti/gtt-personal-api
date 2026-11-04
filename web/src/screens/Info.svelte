@@ -5,7 +5,13 @@
   import Icon from '../lib/components/Icon.svelte'
   import ScreenHeader from '../lib/components/ScreenHeader.svelte'
   import SkeletonRows from '../lib/components/SkeletonRows.svelte'
-  import { describeStopIndex, describeUpstream } from '../lib/status'
+  import {
+    describeComparison,
+    describeGtt,
+    describeStopIndex,
+    describeUpstream,
+    type Line,
+  } from '../lib/status'
 
   let status = $state<Status | null>(null)
   let failure = $state<string | null>(null)
@@ -27,43 +33,57 @@
 
   onMount(load)
 
+  let gtt = $derived(status ? describeGtt(status) : null)
   let upstream = $derived(status ? describeUpstream(status) : null)
+  let comparison = $derived(status ? describeComparison(status) : null)
   let stopIndex = $derived(status ? describeStopIndex(status) : null)
 </script>
 
 <ScreenHeader title="Info" back />
 
-{#if status && upstream && stopIndex}
+{#snippet value(line: Line)}
+  <span class="value {line.tone}">
+    {#if line.tone === 'ok'}<Icon name="ok" size={18} stroke={2.2} />{/if}
+    {line.value}
+  </span>
+  {#if line.detail}<span class="detail">{line.detail}</span>{/if}
+{/snippet}
+
+{#if status && gtt && upstream && stopIndex}
   <dl class="card">
     <div class="row">
       <dt>Versione</dt>
       <dd><span class="value">{status.version}</span></dd>
     </div>
     <div class="row">
-      <dt>Orari in tempo reale</dt>
-      <dd>
-        <span class="value {upstream.tone}">
-          {#if upstream.tone === 'ok'}<Icon name="ok" size={18} stroke={2.2} />{/if}
-          {upstream.value}
-        </span>
-        {#if upstream.detail}<span class="detail">{upstream.detail}</span>{/if}
-      </dd>
+      <dt>Previsioni GTT<span class="sub">rete urbana</span></dt>
+      <dd>{@render value(gtt)}</dd>
     </div>
     <div class="row">
+      <dt>Orari in tempo reale<span class="sub">muoversiatorino.it</span></dt>
+      <dd>{@render value(upstream)}</dd>
+    </div>
+    {#if comparison}
+      <div class="row">
+        <dt>Scarto tra le due<span class="sub">oggi</span></dt>
+        <dd>{@render value(comparison)}</dd>
+      </div>
+    {/if}
+    <div class="row">
       <dt>Elenco fermate</dt>
-      <dd>
-        <span class="value {stopIndex.tone}">{stopIndex.value}</span>
-        {#if stopIndex.detail}<span class="detail">{stopIndex.detail}</span>{/if}
-      </dd>
+      <dd>{@render value(stopIndex)}</dd>
     </div>
   </dl>
+  {#if status.gtt?.trip_updates.ok === false && status.gtt.trip_updates.last_error}
+    <p class="technical">Dettaglio tecnico GTT: {status.gtt.trip_updates.last_error}</p>
+  {/if}
   {#if status.upstream.ok === false && status.upstream.last_error}
-    <p class="technical">Dettaglio tecnico: {status.upstream.last_error}</p>
+    <p class="technical">Dettaglio tecnico muoversiatorino.it: {status.upstream.last_error}</p>
   {/if}
 {:else if failure}
   <ErrorCard message={failure} retry={load} />
 {:else}
-  <div class="card"><SkeletonRows count={3} /></div>
+  <div class="card"><SkeletonRows count={5} /></div>
 {/if}
 
 <h2>{installed ? 'App' : 'Installa sul telefono'}</h2>
@@ -94,7 +114,7 @@
   </div>
 {/if}
 
-<p class="footer">Dati di GTT tramite muoversiatorino.it. Servizio personale, non ufficiale.</p>
+<p class="footer">Dati di GTT (open data) e di muoversiatorino.it. Servizio personale, non ufficiale.</p>
 
 <style>
   dl {
@@ -112,6 +132,16 @@
 
   .row + .row {
     border-top: 1px solid var(--separator);
+  }
+
+  dt {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sub {
+    font-size: var(--size-caption);
+    color: var(--text-2);
   }
 
   dd {

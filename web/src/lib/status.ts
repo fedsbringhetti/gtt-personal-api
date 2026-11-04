@@ -10,9 +10,42 @@ export interface Line {
   tone: 'ok' | 'problem' | 'neutral'
 }
 
-/** The real-time data: whether the upstream answers. */
+/** OpenTripPlanner's real-time data: whether the upstream answers. */
 export function describeUpstream(status: Status, now?: Date): Line {
-  const { ok, last_success, last_failure } = status.upstream
+  return describeHealth(status.upstream, now)
+}
+
+/** GTT's predictions: whether the feed answers, and how fresh its newest data is. */
+export function describeGtt(status: Status, now?: Date): Line {
+  if (!status.gtt) {
+    return { value: 'Spente', detail: 'solo orari di muoversiatorino.it', tone: 'neutral' }
+  }
+  const line = describeHealth(status.gtt.trip_updates, now)
+  const newest = status.gtt.feed?.newest_update
+  if (line.tone === 'ok' && newest) line.detail = `ultimo dato ${formatDayTime(newest, now, true)}`
+  return line
+}
+
+/** Today's difference between the two, and GTT's predictions set aside as implausible.
+ * `null` when GTT is disabled. Short, to fit a 375 px row. */
+export function describeComparison(status: Status): Line | null {
+  if (!status.gtt) return null
+  const { used, mismatches, median_difference_seconds: median } = status.gtt.comparison
+  const total = used + mismatches
+  let value = 'Nessun dato ancora'
+  if (median !== null) value = median < 60 ? 'meno di 1 min' : `${Math.round(median / 60)} min`
+  let detail: string | null = null
+  if (total > 0) {
+    const of = `su ${count(total)}`
+    if (mismatches === 0) detail = `nessuna scartata ${of}`
+    else if (mismatches === 1) detail = `1 scartata ${of}`
+    else detail = `${count(mismatches)} scartate ${of}`
+  }
+  return { value, detail, tone: 'neutral' }
+}
+
+function describeHealth(health: Status['upstream'], now?: Date): Line {
+  const { ok, last_success, last_failure } = health
   if (ok === null) return { value: 'Nessun contatto ancora', detail: null, tone: 'neutral' }
   if (ok) {
     return {
@@ -33,11 +66,14 @@ export function describeStopIndex(status: Status, now?: Date): Line {
   if (!status.stop_index) {
     return { value: 'Non ancora scaricato', detail: 'si scarica alla prima accensione', tone: 'problem' }
   }
-  // Italian rules group only from five digits ("7058"): force "7.058" for a steady layout.
-  const count = status.stop_index.count.toLocaleString('it-IT', { useGrouping: 'always' })
   return {
-    value: `${count} fermate`,
+    value: `${count(status.stop_index.count)} fermate`,
     detail: `aggiornato ${formatDayTime(status.stop_index.synced_at, now)}`,
     tone: 'neutral',
   }
+}
+
+/** Italian grouping, also below five digits ("7.058", not "7058"), for a steady layout. */
+function count(n: number): string {
+  return n.toLocaleString('it-IT', { useGrouping: 'always' })
 }

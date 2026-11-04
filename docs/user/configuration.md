@@ -12,6 +12,8 @@ Environment variables, all optional. In Docker they go in `.env` (see `.env.exam
 | `UPSTREAM_URL` | muoversiatorino endpoint | upstream GraphQL API |
 | `UPSTREAM_TIMEOUT_SECS` | `10` | timeout for departures calls (the full stop list has 60 s) |
 | `DEPARTURES_CACHE_SECS` | `20` | how long departures are reused |
+| `GTT_REALTIME_URL` | `https://percorsieorari.gtt.to.it/das_gtfsrt/` | folder of GTT's real-time feeds; empty disables GTT's predictions (OpenTripPlanner only) |
+| `GTT_TRIP_UPDATES_CACHE_SECS` | `20` | how long GTT's trip updates are reused |
 | `RUST_LOG` | `info` | log level, e.g. `debug` or `info,gtt_personal_api::upstream=debug` |
 
 An invalid value stops the service at startup with a message naming the variable.

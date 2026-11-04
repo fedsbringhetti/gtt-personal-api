@@ -1,6 +1,6 @@
 # Phase 3 — GTT data, rules, trip tracking and notifications: detailed plan
 
-Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02.
+Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02. Mockups approved on 2026-11-04 (step 0), with decisions Z–AC.
 
 Until 2026-10-30 this was Phase 2, with Telegram as the notification channel. The phases were swapped so that notifications can use Web Push from the web app built in Phase 2.
 
@@ -47,12 +47,16 @@ Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xco
 | N | Real-time source (`PLAN.md` decision 10) | For **urban** runs, GTT's trip updates; otherwise OpenTripPlanner's real time; otherwise the scheduled time. **One source per departure**, never mixed. OpenTripPlanner still decides which runs serve the stop, their line, destination, scheduled time and stop sequence. Merge rules in section 4 |
 | O | Service alerts | From GTT's `alerts.aspx`, read every 5 minutes. Shown **per line** (an alert lists every stop of its line, a median of 72), filtered on the lines serving the stop. A new alert on a line of an active rule is notified once |
 | P | Vehicle positions | From GTT's `vehicle_position.aspx`, read only while a tracking is active. Shown on the live page only: no new notification for "no vehicle assigned" (can be added later). The vehicle map is a future idea in `PLAN.md` |
-| Q | GTFS static (`PLAN.md` decision 11) | `stops.txt` and `routes.txt` only, downloaded weekly when the zip's `Last-Modified` changes |
-| U | Decoding GTFS Realtime | The **`gtfs-realtime`** crate (0.2, types already generated from the official `.proto` with `prost` 0.14): no protobuf compiler in Docker or CI. Rejected: generating the types with `prost-build` and `protox`, more build steps for the same result |
+| Q | GTFS static (`PLAN.md` decision 11) | `stops.txt` only, to link alerts to stops (step 2), downloaded weekly when the zip's `Last-Modified` changes. `routes.txt` was dropped on 2026-11-04 with decision Z |
+| U | Decoding GTFS Realtime | **Types generated once from the official `.proto` and kept in the repository** (`src/gtt/proto.rs`, by `tools/gtfs-rt-codegen` with `prost-build` and `protox`, a protobuf compiler in pure Rust); the service depends on `prost` only, with no build script and no protobuf compiler in Docker or CI. Changed on 2026-11-04: the `gtfs-realtime` crate (0.2) first chosen generates its types at build time and needs `protoc`. Rejected: a `build.rs` with `prost-build` and `protox` (about thirty more crates at every clean build); installing `protoc` on the Mac, in Docker and in CI |
 | V | Web Push library | **`web-push-native`** (0.5): pure Rust (`aes128gcm` encryption, VAPID signature), builds an `http::Request` that we send with our `reqwest` and rustls. Rejected: `web-push` 0.11, last released in February 2025, on `hyper` 0.14 and bringing OpenSSL, which the project does not use |
-| W | Reading the GTFS static archive | **`zip`** (deflate only) and **`csv`**, reading just `stops.txt` and `routes.txt`. Rejected: `gtfs-structures`, which loads the whole feed (116 MB of stop times) |
+| W | Reading the GTFS static archive | **`zip`** (deflate only) and **`csv`**, reading just `stops.txt`. Rejected: `gtfs-structures`, which loads the whole feed (116 MB of stop times) |
 | X | Where notifications live in the web app | A **fifth entry in the bottom bar, "Notifiche"** (bell icon): "Attiva notifiche" and the test notification, trackings in progress, rules (list and editor), the log of sent notifications |
-| Y | New screens | **Mocked up on the design canvas and approved before any code** (step 0), as in Phase 2: alerts banner on the stop page, "Avvisami" on a departure, the live tracking page, the Notifiche screen, the rule editor, the GTT row on the info screen |
+| Y | New screens | **Mocked up on the design canvas and approved before any code** (step 0), as in Phase 2: alerts banner on the stop page, "Avvisami" on a departure, the live tracking page, the Notifiche screen, the rule editor, the GTT row on the info screen. Approved on 2026-11-04: [design canvas](https://claude.ai/artifact/GEpFZXDq4dVt5SzF1p4NZP), rows "Fase 3" |
+| Z | Line colors | **Keep the colors by vehicle type** from Phase 2. GTT's `routes.txt` has one color pair per category, not per line (5 pairs for 218 lines: urban buses `FF9900`/`0000FF`, extra-urban buses (four-digit lines) `0080FF`/`FFFFFF`, trams `CC9900`/`0000FF`, metro `FF0000`/`FFFFFF`, a few others `33CC00`/`000000`), and all but the last are below 4.5:1 (3.3–4.0:1). Rejected: GTT's colors as they are; GTT's colors adjusted for contrast |
+| AA | Alerts banner | **Closed by default**: one line with the number of alerts and their titles, opening on tap. Alerts last for months, so the full text every time would push the departures down |
+| AB | When GTT predictions are merged | **At each request**, not in the cache: OpenTripPlanner's departures and GTT's trip updates stay in two separate caches, so a source that fails does not spoil the other's data |
+| AC | Comparison with OpenTripPlanner | Counted **per day** (Europe/Rome, reset at midnight), **once per run and stop**, so reloading a page does not count twice; `/api/status` shows today's mismatches and the median difference |
 
 ## 3. What we know about the upstream
 
@@ -72,6 +76,7 @@ Verified on 2026-10-29.
 Verified on 2026-11-02; the full list of facts is in the Context of `PLAN.md`. What matters for this phase:
 
 - Trip and route ids are OpenTripPlanner's without the `gtt:` prefix; stop sequences and scheduled times match. Stop ids do not: GTT's `stop_id` 2843 is our `gtt:39`, mapped through `stops.txt`.
+- The stop sequence of a departure is OpenTripPlanner's `stopSequence` (this server's schema has no `stopPosition`): at stop 39 on 2026-11-04 it matched GTT's `stop_sequence` and scheduled time for 6 runs out of 6.
 - Trip updates: urban network only; each run has predictions for its next ~6 stops, by `stop_sequence` (no `stop_id`), as an absolute `time` or as a `delay`; `schedule_relationship = CANCELED` for cancelled runs.
 - Vehicle positions: urban network only; position, heading, run, line, vehicle number and timestamp; no speed, no current stop. About a quarter of the vehicles have no run; some are assigned to their next run up to 15 minutes before it starts, when OpenTripPlanner has only the scheduled time.
 - Alerts: about 120 at a time, urban and suburban; mostly detours; `informed_entity` by route (`54U`) or by GTT `stop_id`; `active_period` is often very long (median about a year), so it does not tell when an alert stops mattering.
@@ -88,9 +93,9 @@ Consequence: tracking polls the stop departures (already cached since Phase 1, n
 | `trip_update.aspx` | on demand, when departures are computed | 20 s; concurrent requests share one call |
 | `alerts.aspx` | every 5 minutes, in the background | until the next read |
 | `vehicle_position.aspx` | every 15 s, only while at least one tracking is active | until the next read |
-| `gtt_gtfs.zip` (`stops.txt`, `routes.txt`) | weekly, and at startup when missing; skipped when `Last-Modified` has not changed | stored in SQLite |
+| `gtt_gtfs.zip` (`stops.txt`, from step 2) | weekly, and at startup when missing; skipped when `Last-Modified` has not changed | stored in SQLite |
 
-- Messages are decoded with the `gtfs-realtime` crate (decision U); the GTFS static archive is read with `zip` and `csv` (decision W).
+- Messages are decoded with the generated types in `src/gtt/proto.rs` (decision U); the GTFS static archive is read with `zip` and `csv` (decision W).
 - Freshness comes from each entity's timestamp, never from the header: a prediction older than 3 minutes or a position older than 2 minutes is ignored.
 - Identical updates are recognized by a hash of the entities, not of the whole response, which changes at every request.
 - Same robustness as the OpenTripPlanner client: timeout, one retry on connection errors and 502–504, invalid messages rejected. Outcomes go to a separate entry in `/api/status`.
@@ -99,7 +104,7 @@ Consequence: tracking polls the stop departures (already cached since Phase 1, n
 
 For each departure from OpenTripPlanner on a GTT urban run:
 
-1. Look up the trip update by trip id (without `gtt:`) and service date (`start_date`).
+1. Look up the trip update by trip id (without `gtt:`) and service date (`start_date`), at the departure's `stopSequence`.
 2. Take the update for the departure's `stop_sequence`; if the stop has none, take the last update **before** it and apply its delay (the GTFS Realtime rule: a delay carries over to the following stops). Updates only after the stop mean it has already been passed.
 3. Use it only if the result is plausible: the stop sequence exists in the run and the predicted time is within 60 minutes of the scheduled time. Otherwise fall back to OpenTripPlanner and count a **mismatch**.
 4. A run cancelled by GTT is cancelled; if GTT says nothing and OpenTripPlanner says cancelled, OpenTripPlanner wins.
@@ -236,6 +241,8 @@ Library: `web-push-native` (decision V). It encrypts the payload and signs the V
 Oggi dalle 8:00 alle 14:00 circa. Capolinea provvisorio alla fermata 1471.
 ```
 
+Added with the mockups (2026-11-04): 🐢 for a delay ("Il 67 delle 08:05 è in ritardo di 4 minuti"), ❓ for a run not found, 📡 for upstream health alerts.
+
 ## 8. Upstream health alerts
 
 Built on `UpstreamHealth` from Phase 1:
@@ -305,16 +312,10 @@ CREATE TABLE observed_delays (
   PRIMARY KEY (service_date, trip_id, stop_id)
 );
 
--- From GTT's stops.txt and routes.txt (decision Q), replaced at each download.
+-- From GTT's stops.txt (decision Q, step 2), replaced at each download.
 CREATE TABLE gtt_stops (
   gtt_stop_id TEXT PRIMARY KEY,         -- GTT stop_id, e.g. "2843"
   stop_id     TEXT NOT NULL              -- our gtfsId, e.g. "gtt:39" (from stop_code)
-);
-
-CREATE TABLE gtt_routes (
-  route_id   TEXT PRIMARY KEY,           -- e.g. "gtt:54U"
-  color      TEXT,                       -- route_color
-  text_color TEXT                        -- route_text_color
 );
 
 -- Alerts already notified, so a restart does not notify them again.
@@ -348,8 +349,7 @@ CREATE TABLE notified_alerts (
 Changes to existing endpoints:
 
 - **Departures** (`/api/stops/{stop}/departures`, `/api/favorites/departures`): each departure gets `source` (`gtt`, `otp`, `scheduled`); the response gets `alerts`, the active alerts of the lines serving the stop. `realtime` stays, true when `source` is not `scheduled`.
-- **Lines** in stop details and departures get `color` and `text_color` when GTT publishes them.
-- **`/api/status`**: a `gtt` entry with the outcome of each feed, the age of the last data, the number of mismatches and the median difference from OpenTripPlanner.
+- **`/api/status`**: a `gtt` entry with the outcome of each feed, the age of the last data, and today's number of mismatches and median difference from OpenTripPlanner (decision AC).
 
 Validation errors use the Phase 1 error format.
 
@@ -359,11 +359,11 @@ Mocked up and approved before the code (decision Y), on the same design canvas a
 
 | Screen | Path | Content |
 |--------|------|---------|
-| Stop (changes) | `/fermata/{stop}` | banner with the active GTT alerts of the lines serving the stop (title, text, link); official line colors on the badges; tapping a departure opens a sheet with "Avvisami" for that run |
+| Stop (changes) | `/fermata/{stop}` | banner with the active GTT alerts of the lines serving the stop (title, text, link), closed by default (decision AA); tapping a departure opens a sheet with "Avvisami" for that run |
 | Live tracking | `/corsa/{id}` | line, destination, stop; countdown to the expected departure, expected and scheduled time, delay, source of the time; for urban runs, "mezzo assegnato" and "a N fermate"; the events already notified; the run's past delays (decision L); "Smetti di seguire" |
 | Notifiche (new tab) | `/notifiche` | "Attiva notifiche" (permission asked after the tap) and "Invia una prova"; trackings in progress, each opening its live page; rules with today's state, enabled toggle, pause and "salta oggi"; the log of sent notifications |
 | Rule editor | `/notifiche/regole/nuova`, `/notifiche/regole/{id}` | kind (riepilogo or segui una corsa), name, stop (search as in Cerca), days, time, lines, reminders, delay threshold, "salta i festivi"; "Prova adesso", delete |
-| Info (changes) | `/info` | a row for GTT's real-time feeds: working, last data, mismatches with OpenTripPlanner |
+| Info (changes) | `/info` | rows for GTT's predictions (working, last data), OpenTripPlanner's real time, today's comparison between them (step 1); the date of GTT's static data (step 2) |
 
 The bottom bar gets a fifth entry, "Notifiche" (decision X).
 
@@ -399,9 +399,9 @@ The bottom bar gets a fifth entry, "Notifiche" (decision X).
 
 Each step in its own branch with a PR to `main` and its chapter in `docs/development/` (from chapter 14). When all steps are complete, `v0.3.0` is released.
 
-0. **Mockups** of the new screens (section 11) on the design canvas, approved before step 1. No code.
-1. **GTT real-time predictions**: GTFS static download (`gtt_stops`, `gtt_routes`), real-time client, merge rules, `source` in departures, line colors, `/api/status` and the GTT row on the info screen. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
-2. **Alerts**: reading, linking, `alerts` in departures, `/api/alerts`, banner on the stop page of the web app.
+0. **Mockups** of the new screens (section 11) on the design canvas, approved before step 1. No code. Done on 2026-11-04.
+1. **GTT real-time predictions**: real-time client for trip updates, merge rules, `source` in departures, `/api/status` and the GTT rows on the info screen. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
+2. **Alerts**: GTFS static download (`stops.txt` → `gtt_stops`), reading, linking, `alerts` in departures, `/api/alerts`, banner on the stop page of the web app, the GTT static data row on the info screen.
 3. **Rules**: migrations, typed config, CRUD API, holiday calendar, occurrence calculation with fake clock.
 4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, push handling in the service worker, the Notifiche tab with "Attiva notifiche" and the test notification. Check: a test notification arrives in Chrome on the Mac.
 5. **Scheduler and summaries**: tick, `rule_runs`, summary rules, `/api/rules/{id}/test`, notification of new alerts on the lines of a rule.
@@ -434,4 +434,4 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 | A push subscription expires | Removed on 404/410; the web app re-subscribes when opened |
 | Too many upstream calls during tracking | Shared departures cache; polling only inside the watch window; GTT's trip updates cover the whole network in one call |
 | `web-push-native` is a young library | A fake push service in the tests, and a real notification in Chrome at step 4, before the scheduler and tracking are built on it |
-| The `gtfs-realtime` crate stops following the spec | It only holds generated types: switching to `prost-build` and `protox` with the official `.proto` is a contained change |
+| The GTFS Realtime specification changes | Additions only so far: replace the `.proto` in `tools/gtfs-rt-codegen` and generate the types again |

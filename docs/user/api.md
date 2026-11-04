@@ -102,12 +102,13 @@ curl -s -H "$AUTH" "$BASE/api/stops/39/departures?lines=4,15&minutes=30&limit=10
     "line": "67", "mode": "BUS", "headsign": "MONCALIERI, TESTONA - PIAZZA MARCONI",
     "scheduled": "2026-10-29T17:24:00+01:00", "expected": "2026-10-29T17:23:53+01:00",
     "delay_seconds": -7, "realtime": true, "canceled": false,
-    "trip_id": "gtt:28459721U", "minutes": 0
+    "trip_id": "gtt:28459721U", "source": "otp", "minutes": 0
   }]
 }
 ```
 
 - `expected` is the time to rely on; it equals `scheduled` when `realtime` is `false`.
+- `source` says where `expected` comes from: `gtt` (GTT's own prediction, urban runs only), `otp` (OpenTripPlanner's real time) or `scheduled` (the timetable). GTT's prediction is used when it is less than 3 minutes old and within 60 minutes of the scheduled time; otherwise OpenTripPlanner's. A run cancelled by either source has `canceled: true`.
 - `minutes` is rounded down and never negative.
 - `stale: true` means the upstream is failing and this is the last good data (at most 2 minutes old, see `fetched_at`).
 
@@ -176,7 +177,21 @@ curl -s "$BASE/health"
 curl -s -H "$AUTH" "$BASE/api/status"
 ```
 
-Version, current time, `upstream` (`ok`, last success, last failure and error, consecutive failures) and `stop_index` (`synced_at`, `count`). The first place to look when something seems wrong.
+Version, current time, `upstream` (`ok`, last success, last failure and error, consecutive failures), `stop_index` (`synced_at`, `count`) and `gtt`. The first place to look when something seems wrong.
+
+`gtt` is `null` when GTT's data is disabled (`GTT_REALTIME_URL` empty). Otherwise:
+
+```json
+"gtt": {
+  "trip_updates": {"ok": true, "last_success": "2026-11-04T09:55:01Z", "last_failure": null, "last_error": null, "consecutive_failures": 0},
+  "feed": {"runs": 388, "newest_update": "2026-11-04T09:55:01Z"},
+  "comparison": {"date": "2026-11-04", "used": 10, "mismatches": 0, "compared": 9, "median_difference_seconds": 185}
+}
+```
+
+- `trip_updates`: outcome of the recent reads of GTT's trip updates, in the same shape as `upstream`.
+- `feed`: the last trip updates read (`null` until the first success): runs in the feed and the most recent update of any run.
+- `comparison`: today (Europe/Rome), one entry per run and stop, so reloading a page does not count twice. `used`: departures that took GTT's prediction; `mismatches`: GTT predictions set aside as implausible; `compared`: used departures where OpenTripPlanner had a prediction too; `median_difference_seconds`: median of their absolute differences.
 
 ## Errors
 

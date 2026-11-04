@@ -43,7 +43,7 @@ This document defines the phases. The detailed plan for each phase is written to
 | 8 | Phones | iPhone / Android | Both: the web app is designed for the stricter case (iPhone, installable PWA) |
 | 9 | Language of user-facing text | Italian / English / both | Italian (web app, notifications); code and docs stay in English |
 | 10 | Real-time source | OpenTripPlanner / GTT GTFS Realtime | GTT's own feed for urban runs, since GTT produces the data; then OpenTripPlanner's real time; then the scheduled time. OpenTripPlanner stays the source of stops and of which runs serve a stop, for every company. If GTT's predictions turn out clearly wrong, OpenTripPlanner goes back first (decided 2026-11-02) |
-| 11 | GTFS static | full import / partial / none | Only `stops.txt` (GTT `stop_id` ↔ stop code) and `routes.txt` (official line colors), downloaded weekly; no timetables (decided 2026-11-02) |
+| 11 | GTFS static | full import / partial / none | Only `stops.txt` (GTT `stop_id` ↔ stop code), downloaded weekly; no timetables (decided 2026-11-02). `routes.txt` dropped on 2026-11-04: its colors are per category, not per line, and below 4.5:1 contrast, so badges keep the colors by vehicle type |
 | 12 | Testing on real phones | local HTTPS / temporary tunnel / at deployment | At deployment (Phase 4). Until then the service is tested on the Mac (browser and iOS Simulator), where `localhost` counts as secure for location, service worker and Web Push (decided 2026-11-02) |
 | 13 | Name and icon of the app | GTT / a name of our own | **InTime** (provisional, may change), not the company's brand; icon: a white train in profile with a dish on its roof sending radio waves, on red (decided 2026-11-02) |
 
