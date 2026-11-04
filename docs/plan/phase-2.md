@@ -84,7 +84,7 @@ Approved on 2026-11-02 from mockups of every screen, in light and dark, plus the
 - **Design tokens** as CSS variables: colors, spacing, radius, font sizes; one set for light, one for dark, chosen by the phone's setting.
 - **Colors**: iOS-like neutrals (background `#F2F2F7` / `#000000`, surfaces `#FFFFFF` / `#1C1C1E`, secondary text `#636366` / `#AEAEB2`); accent dark teal `#0E7490` (`#4FC3DC` in dark), chosen not to be confused with the bus blue. Text contrast at least 4.5:1.
 - **Font**: the system font; sizes 34 (title), 22 (section), 17 (body), 15 (secondary), 13 (captions); minutes with fixed-width digits.
-- **Line badges**: colored by vehicle type, the line name in white bold: bus `#1D4ED8`, tram `#C2410C`, metro `#B91C1C`, rail `#15803D`. Official line colors replace them in Phase 3 (`routes.txt`).
+- **Line badges**: colored by vehicle type, the line name in white bold: bus `#1D4ED8`, tram `#C2410C`, metro `#B91C1C`, rail `#15803D`. Phase 3 kept them: GTT's `routes.txt` has colors per category, not per line, below 4.5:1 contrast (Phase 3 decision Z).
 - **Departure rows** in the style of a departure board: badge, destination, expected time on a second line, minutes large on the right; "in arrivo" instead of 0 minutes.
 - **Times and delays**: a real-time icon next to the time when the data is real time; none, and "orario programmato", when it is not. Delay in amber from 1 to 4 minutes (`+2`), red from 5 (`+6`), accent when early (`−1`), green "in orario".
 - **Offline**: a banner "Sei offline · dati delle HH:MM"; departures show their clock time ("alle 08:03") instead of minutes, since a countdown on old data would mislead.
