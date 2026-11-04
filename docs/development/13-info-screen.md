@@ -32,12 +32,12 @@ The last screen of Phase 2: the version, whether the real-time data works, how f
 ### What the screen says
 
 ```ts
-export function describeUpstream(status: Status, now?: Date): Line {
-  const { ok, last_success, last_failure } = status.upstream
+function describeHealth(health: Status['upstream'], now?: Date): Line {
+  const { ok, last_success, last_failure } = health
   if (ok === null) return { value: 'Nessun contatto ancora', detail: null, tone: 'neutral' }
 ```
 
-`ok` is `null` before the server has called the upstream once (just started), `true` after a success and `false` after a failure. Each case becomes a short value, a detail under it and a tone, which picks the color (green, red or gray).
+`describeUpstream` passes `status.upstream` to `describeHealth` (since chapter 14 the same function also describes GTT's feed). `ok` is `null` before the server has called the upstream once (just started), `true` after a success and `false` after a failure. Each case becomes a short value, a detail under it and a tone, which picks the color (green, red or gray).
 
 ### Days in Turin
 

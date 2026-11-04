@@ -43,6 +43,8 @@ export interface Departure {
   realtime: boolean
   canceled: boolean
   trip_id: string
+  /** Where `expected` comes from: GTT's own prediction, OpenTripPlanner's, or the timetable. */
+  source: 'gtt' | 'otp' | 'scheduled'
   /** Whole minutes until `expected`, never negative, as of `generated_at`. */
   minutes: number
 }
@@ -94,6 +96,20 @@ export interface Status {
   }
   /** `null` until the first stop sync. */
   stop_index: { synced_at: string; count: number } | null
+  /** GTT's real-time data; `null` when the server has it disabled. */
+  gtt: {
+    trip_updates: Status['upstream']
+    /** The last trip updates read; `null` until the first success. */
+    feed: { runs: number; newest_update: string | null } | null
+    /** Today's comparison with OpenTripPlanner, one entry per run and stop. */
+    comparison: {
+      date: string
+      used: number
+      mismatches: number
+      compared: number
+      median_difference_seconds: number | null
+    }
+  } | null
 }
 
 /** How far ahead the stop screen looks, and how many rows it shows at most. */
