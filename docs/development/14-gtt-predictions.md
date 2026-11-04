@@ -1,6 +1,6 @@
 # 14. GTT predictions
 
-> Phase 3, step 1 · PR —
+> Phase 3, step 1 · PR [#21](https://github.com/fedsbringhetti/gtt-personal-api/pull/21)
 
 ## Goal
 
