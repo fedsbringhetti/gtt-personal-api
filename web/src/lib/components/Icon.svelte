@@ -18,6 +18,9 @@
     offline:
       '<path d="M3 3l18 18"/><path d="M5 12.5a10 10 0 0 1 4-2.3"/><path d="M8.5 16a5 5 0 0 1 5.5-1"/><path d="M12 19.5v.01"/><path d="M13.5 6.1A15 15 0 0 1 22 9"/><path d="M2 9a15 15 0 0 1 3.4-2"/>',
     ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.8"/>',
+    warning: '<path d="M12 3.5L2.5 20h19z"/><path d="M12 10v4.5"/><path d="M12 17.3v.2"/>',
+    expand: '<path d="M6 9l6 6 6-6"/>',
+    collapse: '<path d="M6 15l6-6 6 6"/>',
   } as const
 
   export type IconName = keyof typeof icons

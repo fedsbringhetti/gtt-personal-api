@@ -1,7 +1,7 @@
 /**
  * Calls to the backend API (docs/user/api.md). The types mirror the Rust structs that the
  * server serializes: `StopInfo` and `LineRef` in `src/stops/mod.rs`, `DeparturesResponse`
- * in `src/api/stops.rs`, `Departure` in `src/departures.rs`.
+ * in `src/api/stops.rs`, `Departure` in `src/departures.rs`, `Alert` in `src/gtt/alerts.rs`.
  */
 
 export interface LineRef {
@@ -49,6 +49,20 @@ export interface Departure {
   minutes: number
 }
 
+/** A GTT service alert: a detour, a limited line, a suspended stop. Texts are GTT's own. */
+export interface Alert {
+  id: string
+  title: string
+  description: string | null
+  /** GTT's page about it, `http` or `https` only. */
+  url: string | null
+  /** The lines it names, sorted; empty when it names none. */
+  lines: LineRef[]
+  /** The active period that includes now; `null` when open-ended. */
+  start: string | null
+  end: string | null
+}
+
 export interface DeparturesResponse {
   stop: { id: string; code: string; name: string }
   generated_at: string
@@ -57,6 +71,9 @@ export interface DeparturesResponse {
   /** The upstream is failing and these are the last good data. */
   stale: boolean
   departures: Departure[]
+  /** GTT's active alerts for the stop, whatever the line filter. Missing in data saved
+   * offline by versions before 0.3.0. */
+  alerts?: Alert[]
 }
 
 /** A favorite as `GET /api/favorites` returns it (`FavoriteView` in `src/api/favorites.rs`). */
@@ -109,6 +126,22 @@ export interface Status {
       compared: number
       median_difference_seconds: number | null
     }
+    alerts: {
+      feed: Status['upstream']
+      /** The last alerts read; `null` until the first success. */
+      read: { read_at: string; alerts: number; unknown_stops: number } | null
+    }
+    /** GTT's static data (`stops.txt`); `null` when the server has it disabled. */
+    static_data: {
+      download: Status['upstream']
+      /** `null` until the first download. */
+      data: {
+        checked_at: string
+        /** The archive's `Last-Modified`: when GTT built it. */
+        version: string | null
+        stops: number
+      } | null
+    } | null
   } | null
 }
 

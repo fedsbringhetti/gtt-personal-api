@@ -73,6 +73,40 @@ export function describeStopIndex(status: Status, now?: Date): Line {
   }
 }
 
+const dayMonthFormat = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'Europe/Rome',
+})
+
+/** GTT's static data, which links alerts to stops: when GTT built it, when it was checked.
+ * `null` when the server has it disabled. */
+export function describeStaticData(status: Status, now?: Date): Line | null {
+  const staticData = status.gtt?.static_data
+  if (!staticData) return null
+  const { download, data } = staticData
+  const failed = download.ok === false && download.last_failure
+  if (!data) {
+    if (failed) {
+      return {
+        value: 'Non scaricati',
+        detail: `ultimo errore ${formatDayTime(download.last_failure!, now)}`,
+        tone: 'problem',
+      }
+    }
+    return { value: 'Non ancora scaricati', detail: null, tone: 'neutral' }
+  }
+  return {
+    value: data.version
+      ? `del ${dayMonthFormat.format(new Date(data.version))}`
+      : `${count(data.stops)} fermate`,
+    detail: failed
+      ? `controllo non riuscito ${formatDayTime(download.last_failure!, now)}`
+      : `controllato ${formatDayTime(data.checked_at, now)}`,
+    tone: 'neutral',
+  }
+}
+
 /** Italian grouping, also below five digits ("7.058", not "7058"), for a steady layout. */
 function count(n: number): string {
   return n.toLocaleString('it-IT', { useGrouping: 'always' })
