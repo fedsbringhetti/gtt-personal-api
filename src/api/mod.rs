@@ -15,6 +15,7 @@ use crate::{
     web::{self, WebAssets},
 };
 
+mod alerts;
 pub mod auth;
 mod error;
 mod favorites;
@@ -45,6 +46,7 @@ pub struct AppState {
 pub fn router(state: AppState) -> Router {
     let mut api = Router::new()
         .route("/api/status", get(status::status))
+        .route("/api/alerts", get(alerts::alerts))
         .route("/api/stops", get(stops::search))
         .route("/api/stops/nearby", get(stops::nearby))
         .route("/api/stops/{stop}", get(stops::details))
