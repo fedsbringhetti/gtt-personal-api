@@ -87,12 +87,12 @@ pub fn spawn(
     })
 }
 
-fn needs_sync(last_sync: Option<DateTime<Utc>>, now: DateTime<Utc>) -> bool {
+pub(crate) fn needs_sync(last_sync: Option<DateTime<Utc>>, now: DateTime<Utc>) -> bool {
     last_sync.is_none_or(|at| now - at >= MAX_AGE)
 }
 
 /// The first `sync_time` (Europe/Rome) strictly after `now`.
-fn next_sync_at(now: DateTime<Utc>, sync_time: NaiveTime) -> DateTime<Utc> {
+pub(crate) fn next_sync_at(now: DateTime<Utc>, sync_time: NaiveTime) -> DateTime<Utc> {
     let today = now.with_timezone(&TIME_ZONE).date_naive();
     [today, today + Days::new(1), today + Days::new(2)]
         .into_iter()
@@ -115,7 +115,7 @@ fn local_to_utc(local: chrono::NaiveDateTime) -> Option<DateTime<Utc>> {
         .map(|at| at.with_timezone(&Utc))
 }
 
-fn retry_delay(attempt: usize) -> Duration {
+pub(crate) fn retry_delay(attempt: usize) -> Duration {
     RETRY_DELAYS[attempt.min(RETRY_DELAYS.len() - 1)]
 }
 

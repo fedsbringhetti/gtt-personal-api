@@ -13,6 +13,7 @@ const DEFAULT_STOPS_SYNC_TIME: &str = "04:00";
 const DEFAULT_FEEDS: &str = "gtt";
 const DEFAULT_GTT_REALTIME_URL: &str = "https://percorsieorari.gtt.to.it/das_gtfsrt/";
 const DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS: &str = "20";
+const DEFAULT_GTT_GTFS_URL: &str = "https://www.gtt.to.it/open_data/gtt_gtfs.zip";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -31,6 +32,9 @@ pub struct Config {
     /// departures use OpenTripPlanner alone.
     pub gtt_realtime_url: Option<reqwest::Url>,
     pub gtt_trip_updates_cache_ttl: Duration,
+    /// GTT's GTFS static archive, for its `stops.txt`. `None` disables it: alerts are then
+    /// linked by line only.
+    pub gtt_gtfs_url: Option<reqwest::Url>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -92,6 +96,12 @@ impl Config {
                 "GTT_TRIP_UPDATES_CACHE_SECS",
                 DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS,
             )?),
+            gtt_gtfs_url: parse_with(
+                &lookup,
+                "GTT_GTFS_URL",
+                DEFAULT_GTT_GTFS_URL,
+                parse_optional_url,
+            )?,
         })
     }
 }
@@ -164,6 +174,20 @@ mod tests {
             DEFAULT_GTT_REALTIME_URL
         );
         assert_eq!(config.gtt_trip_updates_cache_ttl, Duration::from_secs(20));
+        assert_eq!(config.gtt_gtfs_url.unwrap().as_str(), DEFAULT_GTT_GTFS_URL);
+    }
+
+    #[test]
+    fn reads_gtt_static_settings() {
+        let config = config_from(&[("GTT_GTFS_URL", "http://localhost:9999/gtfs.zip")]).unwrap();
+        assert_eq!(
+            config.gtt_gtfs_url.unwrap().as_str(),
+            "http://localhost:9999/gtfs.zip"
+        );
+        assert_eq!(
+            config_from(&[("GTT_GTFS_URL", "")]).unwrap().gtt_gtfs_url,
+            None
+        );
     }
 
     #[test]

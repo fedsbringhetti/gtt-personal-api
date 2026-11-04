@@ -11,7 +11,10 @@ use gtt_personal_api::{
     db,
     departures::DeparturesService,
     favorites::FavoriteStore,
-    gtt::GttRealtime,
+    gtt::{
+        GttRealtime,
+        static_data::{self, GttStatic},
+    },
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
     upstream::UpstreamClient,
@@ -84,13 +87,30 @@ async fn serve(config: Config) -> ExitCode {
     };
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
     let stops = StopIndex::new(pool.clone());
-    let favorites = FavoriteStore::new(pool);
+    let favorites = FavoriteStore::new(pool.clone());
     sync::spawn(
         stops.clone(),
         upstream.clone(),
         clock.clone(),
         config.stops_sync_time,
     );
+    // GTT's static data only serves the alerts, which come with GTT's real-time feeds.
+    let gtt_static = match (&gtt, &config.gtt_gtfs_url) {
+        (Some(_), Some(url)) => match GttStatic::new(pool.clone(), url.clone()) {
+            Ok(gtt_static) => Some(gtt_static),
+            Err(err) => {
+                tracing::error!("cannot create the GTT static data client: {err}");
+                return ExitCode::FAILURE;
+            }
+        },
+        _ => None,
+    };
+    if let Some(gtt_static) = &gtt_static {
+        let (check_time, _) = config
+            .stops_sync_time
+            .overflowing_add_signed(static_data::CHECK_AFTER_STOPS_SYNC);
+        static_data::spawn(gtt_static.clone(), clock.clone(), check_time, || {});
+    }
 
     if config.api_token.is_none() {
         tracing::warn!("API_TOKEN is not set: /api/* is open to anyone who can reach the service");

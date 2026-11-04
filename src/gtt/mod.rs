@@ -19,6 +19,7 @@ pub mod comparison;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, rustdoc::all, missing_docs)]
 pub mod proto;
+pub mod static_data;
 pub mod trip_updates;
 
 use comparison::Comparisons;
