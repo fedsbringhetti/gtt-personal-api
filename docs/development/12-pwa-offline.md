@@ -148,4 +148,4 @@ Build size: JavaScript 87.6 kB (32.1 kB compressed) plus `workbox-window` 5.7 kB
 
 ## Later changes
 
-None yet.
+- [Chapter 17](17-web-push.md): `sw.ts` also handles `push` and `notificationclick`, reading payloads with `lib/pushPayload.ts`, which `tsconfig.sw.json` now includes.

@@ -162,4 +162,5 @@ The container should be `healthy` within a few seconds; the service is on `http:
 ## Later changes
 
 - The first real deployment will follow [../user/deploy.md](../user/deploy.md), planned in Phase 4.
+- [Chapter 17](17-web-push.md) adds the `vapid-keys` subcommand (handled before the configuration is read, so `docker run --rm federicosbringhetti/gtt-personal-api vapid-keys` works with no environment) and moves the argument parsing above `Config::from_env`; the excerpt above is shown as it is today.
 - [Step 7](07-web-skeleton.md) adds a first stage, `web`, that builds the web app with Node; the builder copies its output before `cargo build`.
