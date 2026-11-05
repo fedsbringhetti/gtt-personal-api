@@ -15,6 +15,8 @@ use gtt_personal_api::{
     departures::DeparturesService,
     favorites::FavoriteStore,
     gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
+    notify::{Notifier, log::LogNotifier, vapid::VapidKey, webpush::WebPushNotifier},
+    push::{EndpointPolicy, SubscriptionStore},
     rules::RuleStore,
     stops::{Feeds, StopIndex, sync::sync_once},
     time::{Clock, FixedClock},
@@ -40,6 +42,9 @@ pub struct TestApp {
     pub alerts: Option<Arc<AlertsService>>,
     /// Set when `Options::gtt_url` and `Options::gtt_gtfs_url` are.
     pub gtt_static: Option<GttStatic>,
+    pub subscriptions: SubscriptionStore,
+    /// Set when `Options::vapid_key` is.
+    pub vapid_public_key: Option<String>,
 }
 
 /// A tiny stand-in for the built web app: `index.html` and one hashed script.
@@ -57,6 +62,10 @@ pub struct Options {
     pub gtt_url: Option<String>,
     /// GTT's GTFS static archive; used only with `gtt_url`.
     pub gtt_gtfs_url: Option<String>,
+    /// Enables Web Push, with the subject `mailto:test@example.com`.
+    pub vapid_key: Option<VapidKey>,
+    /// Where subscriptions may point; `None` is the production list of push services.
+    pub push_endpoints: Option<EndpointPolicy>,
 }
 
 impl Default for Options {
@@ -67,6 +76,8 @@ impl Default for Options {
             web: WebAssets::from_embed::<FixtureWeb>(),
             gtt_url: None,
             gtt_gtfs_url: None,
+            vapid_key: None,
+            push_endpoints: None,
         }
     }
 }
@@ -104,6 +115,20 @@ pub async fn test_app_with(
             gtt_static.clone(),
         ))
     });
+    let subscriptions = SubscriptionStore::new(pool.clone());
+    let notifier: Arc<dyn Notifier> = match &options.vapid_key {
+        Some(key) => Arc::new(
+            WebPushNotifier::new(
+                subscriptions.clone(),
+                key.clone(),
+                "mailto:test@example.com".to_owned(),
+                clock.clone(),
+            )
+            .unwrap(),
+        ),
+        None => Arc::new(LogNotifier),
+    };
+    let vapid_public_key = options.vapid_key.as_ref().map(VapidKey::public_key_base64);
     let router = api::router(AppState {
         departures: Arc::new(DeparturesService::new(
             upstream.clone(),
@@ -114,6 +139,12 @@ pub async fn test_app_with(
         stops: stops.clone(),
         favorites: FavoriteStore::new(pool.clone()),
         rules: RuleStore::new(pool),
+        subscriptions: subscriptions.clone(),
+        notifier,
+        vapid_public_key: vapid_public_key.as_deref().map(Arc::from),
+        push_endpoints: options
+            .push_endpoints
+            .unwrap_or_else(EndpointPolicy::push_services),
         default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
         upstream_health: upstream.health(),
         gtt,
@@ -129,6 +160,8 @@ pub async fn test_app_with(
         upstream,
         alerts,
         gtt_static,
+        subscriptions,
+        vapid_public_key,
     }
 }
 

@@ -71,11 +71,12 @@ ENTRYPOINT ["gtt-personal-api"]
 
 ```rust
 let args: Vec<String> = std::env::args().skip(1).collect();
-match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+let args: Vec<&str> = args.iter().map(String::as_str).collect();
+match args.as_slice() {
     [] => serve(config).await,
     ["healthcheck"] => healthcheck(config.bind_addr).await,
     _ => {
-        eprintln!("usage: gtt-personal-api [healthcheck]");
+        eprintln!("usage: gtt-personal-api [healthcheck | vapid-keys]");
         ExitCode::from(2)
     }
 }
@@ -161,4 +162,5 @@ The container should be `healthy` within a few seconds; the service is on `http:
 ## Later changes
 
 - The first real deployment will follow [../user/deploy.md](../user/deploy.md), planned in Phase 4.
+- [Chapter 17](17-web-push.md) adds the `vapid-keys` subcommand (handled before the configuration is read, so `docker run --rm federicosbringhetti/gtt-personal-api vapid-keys` works with no environment) and moves the argument parsing above `Config::from_env`; the excerpt above is shown as it is today.
 - [Step 7](07-web-skeleton.md) adds a first stage, `web`, that builds the web app with Node; the builder copies its output before `cargo build`.

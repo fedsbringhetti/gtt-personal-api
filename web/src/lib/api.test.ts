@@ -3,7 +3,11 @@ import {
   ApiError,
   addFavorite,
   errorText,
+  deletePushSubscription,
   getDepartures,
+  getPushKey,
+  savePushSubscription,
+  sendTestNotification,
   getStop,
   nearbyStops,
   removeFavorite,
@@ -65,6 +69,39 @@ describe('favorites', () => {
   it('accepts an empty answer to a delete', async () => {
     respond(204, '')
     await expect(removeFavorite(1)).resolves.toBeUndefined()
+  })
+})
+
+describe('push', () => {
+  it('reads the public key', async () => {
+    const fetch = respond(200, { public_key: 'BKey' })
+    expect(await getPushKey()).toBe('BKey')
+    expect(fetch.mock.calls[0][0]).toBe('/api/push/key')
+  })
+
+  it('reports a server without a key', async () => {
+    respond(503, { error: { code: 'push_disabled', message: 'off' } })
+    await expect(getPushKey()).rejects.toMatchObject({ status: 503, code: 'push_disabled' })
+  })
+
+  it('sends the subscription as the browser gives it', async () => {
+    const fetch = respond(201, { id: 1 })
+    const body = { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'p', auth: 'a' } }
+    await savePushSubscription(body)
+    expect(fetch.mock.calls[0][0]).toBe('/api/push/subscriptions')
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify(body) })
+  })
+
+  it('deletes by endpoint and sends the test without a body', async () => {
+    const fetch = respond(204, null)
+    await deletePushSubscription('https://e')
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      method: 'DELETE',
+      body: JSON.stringify({ endpoint: 'https://e' }),
+    })
+    const test = respond(200, { channel: 'log', sent: 1, removed: 0, failed: 0 })
+    expect((await sendTestNotification()).channel).toBe('log')
+    expect(test.mock.calls[0][1]).toMatchObject({ method: 'POST', body: undefined })
   })
 })
 

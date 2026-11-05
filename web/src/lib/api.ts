@@ -277,6 +277,42 @@ export function removeFavorite(id: number): Promise<void> {
   return request(`/api/favorites/${id}`, { method: 'DELETE' })
 }
 
+/** The browser's `PushSubscription.toJSON()`, as `POST /api/push/subscriptions` takes it. */
+export interface PushSubscriptionBody {
+  endpoint: string
+  expirationTime?: number | null
+  keys: { p256dh: string; auth: string }
+}
+
+/** Response of `POST /api/notifications/test` (`SendReport` plus the channel in use). */
+export interface TestNotificationResult {
+  /** `webpush`, or `log` when the server has no VAPID key. */
+  channel: 'webpush' | 'log'
+  sent: number
+  removed: number
+  failed: number
+}
+
+/** The server's VAPID public key (base64url); `push_disabled` (503) when it has none. */
+export async function getPushKey(signal?: AbortSignal): Promise<string> {
+  return (await get<{ public_key: string }>('/api/push/key', signal)).public_key
+}
+
+/** Saves this device's subscription; sending the same endpoint again updates it. */
+export function savePushSubscription(subscription: PushSubscriptionBody): Promise<unknown> {
+  return request('/api/push/subscriptions', { method: 'POST', body: subscription })
+}
+
+/** Forgets a subscription; the server answers 204 also when it does not know it. */
+export function deletePushSubscription(endpoint: string): Promise<void> {
+  return request('/api/push/subscriptions', { method: 'DELETE', body: { endpoint } })
+}
+
+/** Sends a test notification to every subscribed device. */
+export function sendTestNotification(): Promise<TestNotificationResult> {
+  return request('/api/notifications/test', { method: 'POST' })
+}
+
 /**
  * How a stop is written in the app's paths: the bare code for GTT (`/fermata/39`), the
  * full id for other companies, whose codes would clash with GTT's.
@@ -318,6 +354,8 @@ export function errorText(error: unknown): string {
       return 'Il servizio degli orari è lento a rispondere. Riprova.'
     case 'upstream_error':
       return 'Il servizio degli orari non risponde. Riprova tra poco.'
+    case 'push_disabled':
+      return 'Le notifiche non sono attive sul server.'
     default:
       return `Qualcosa non ha funzionato (${error.status || error.code}). Riprova.`
   }

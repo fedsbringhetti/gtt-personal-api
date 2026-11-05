@@ -294,6 +294,53 @@ curl -s -H "$AUTH" -X DELETE "$BASE/api/rules/1"
 
 Deletes it (204).
 
+## Push notifications
+
+Web Push delivers notifications to the phone through the browser's push service, even when InTime is closed ([plan](../plan/phase-3.md#7-notifications-web-push)). Step 4 of Phase 3 adds the subscription and a test; rules and trackings that send come with the scheduler (step 5). It needs `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` ([configuration.md](configuration.md#web-push-keys)); without them the four endpoints below still exist, but the first two answer `503` with `push_disabled` and the test only writes to the log.
+
+The web app does all this from the Notifiche screen: it reads the key, asks the browser for permission and subscribes. The calls are shown for completeness; a subscription needs a real browser's keys, so only the key and the test can be tried with `curl`.
+
+```bash
+curl -s -H "$AUTH" "$BASE/api/push/key"
+```
+
+`{"public_key": "BK..."}`: the VAPID public key (base64url, 65 bytes), which the browser needs as `applicationServerKey` to subscribe. `503` `push_disabled` when the server has no VAPID key.
+
+```bash
+curl -s -H "$AUTH" -H "Content-Type: application/json" -X POST "$BASE/api/push/subscriptions" -d '{"endpoint": "https://fcm.googleapis.com/fcm/send/...", "expirationTime": null, "keys": {"p256dh": "BN...", "auth": "..."}}'
+```
+
+Saves this device's subscription: the browser's own `PushSubscription.toJSON()`. `expirationTime` is accepted and ignored; any other unknown field is refused. The same `endpoint` again updates its keys and label and keeps its creation time, so the web app sends it every time the screen opens. Answers `201` for a new subscription, `200` for an existing one:
+
+```json
+{"id": 1, "label": "Mac", "created_at": "2026-11-05T11:40:12Z"}
+```
+
+`label` is the kind of device, from the `User-Agent`: `iPhone`, `iPad`, `Android`, `Mac`, `Windows`, or `null`. `400` `invalid_request` when:
+
+- the `endpoint` is not `https` on the default port, or its host is not a known push service (`fcm.googleapis.com`, `push.apple.com`, `push.services.mozilla.com`, `notify.windows.com`, or a subdomain of them), has credentials in it or is longer than 2048 characters;
+- `keys.p256dh` is not an uncompressed P-256 point or `keys.auth` is not 16 bytes (base64url).
+
+```bash
+curl -s -H "$AUTH" -H "Content-Type: application/json" -X DELETE "$BASE/api/push/subscriptions" -d '{"endpoint": "https://fcm.googleapis.com/fcm/send/..."}'
+```
+
+Forgets a subscription (204), also when the endpoint is unknown.
+
+```bash
+curl -s -H "$AUTH" -X POST "$BASE/api/notifications/test"
+```
+
+Sends "🔔 Notifica di prova" to every subscribed device (no body needed):
+
+```json
+{"channel": "webpush", "sent": 2, "removed": 0, "failed": 0}
+```
+
+- `channel` is `webpush`, or `log` when the server has no VAPID key: the notification is then only written to the log and `sent` is 1.
+- `sent`: devices the push service accepted. `removed`: subscriptions deleted because the push service said they no longer exist (404 or 410). `failed`: devices that could not be reached (the push service refused or did not answer); their subscriptions are kept.
+- The response is 200 even when `sent` is 0: look at the counts.
+
 ## Status and health
 
 ```bash
@@ -344,4 +391,5 @@ Always `{"error": {"code": "...", "message": "..."}}`:
 | 500 | `internal_error` | database problem (details in the logs) |
 | 502 | `upstream_error` | upstream error and no recent data to fall back on |
 | 503 | `index_not_ready` | stop index not downloaded yet |
+| 503 | `push_disabled` | Web Push is not configured on the server (no `VAPID_PRIVATE_KEY`) |
 | 504 | `upstream_timeout` | upstream too slow |

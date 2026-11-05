@@ -1,6 +1,6 @@
 # Phase 3 — GTT data, rules, trip tracking and notifications: detailed plan
 
-Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02. Mockups approved on 2026-11-04 (step 0), with decisions Z–AC; decisions O and Q changed and AD–AE added with step 2 (alerts), the same day. Decision K changed and AF–AJ added with step 3 (rules), on 2026-11-05.
+Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02. Mockups approved on 2026-11-04 (step 0), with decisions Z–AC; decisions O and Q changed and AD–AE added with step 2 (alerts), the same day. Decision K changed and AF–AJ added with step 3 (rules), on 2026-11-05. Decisions AK–AR added with step 4 (Web Push), the same day.
 
 Until 2026-10-30 this was Phase 2, with Telegram as the notification channel. The phases were swapped so that notifications can use Web Push from the web app built in Phase 2.
 
@@ -49,7 +49,7 @@ Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xco
 | P | Vehicle positions | From GTT's `vehicle_position.aspx`, read only while a tracking is active. Shown on the live page only: no new notification for "no vehicle assigned" (can be added later). The vehicle map is a future idea in `PLAN.md` |
 | Q | GTFS static (`PLAN.md` decision 11) | `stops.txt` only, to link alerts to stops (step 2). Checked **every night** with a conditional request (`If-Modified-Since`): GTT answers `304` with no body when the zip has not changed, so the 20 MB are downloaded only after GTT rebuilds it (changed from weekly on 2026-11-04, step 2). `routes.txt` was dropped on 2026-11-04 with decision Z; line names in alerts come from the stop index (decision AD) |
 | U | Decoding GTFS Realtime | **Types generated once from the official `.proto` and kept in the repository** (`src/gtt/proto.rs`, by `tools/gtfs-rt-codegen` with `prost-build` and `protox`, a protobuf compiler in pure Rust); the service depends on `prost` only, with no build script and no protobuf compiler in Docker or CI. Changed on 2026-11-04: the `gtfs-realtime` crate (0.2) first chosen generates its types at build time and needs `protoc`. Rejected: a `build.rs` with `prost-build` and `protox` (about thirty more crates at every clean build); installing `protoc` on the Mac, in Docker and in CI |
-| V | Web Push library | **`web-push-native`** (0.5): pure Rust (`aes128gcm` encryption, VAPID signature), builds an `http::Request` that we send with our `reqwest` and rustls. Rejected: `web-push` 0.11, last released in February 2025, on `hyper` 0.14 and bringing OpenSSL, which the project does not use |
+| V | Web Push library | **`web-push-native`** (0.5): pure Rust (`aes128gcm` encryption; the VAPID signature is ours since step 4, decision AK), builds an `http::Request` that we send with our `reqwest` and rustls. Rejected: `web-push` 0.11, last released in February 2025, on `hyper` 0.14 and bringing OpenSSL, which the project does not use |
 | W | Reading the GTFS static archive | **`zip`** (deflate only) and **`csv`**, reading just `stops.txt`. Rejected: `gtfs-structures`, which loads the whole feed (116 MB of stop times) |
 | X | Where notifications live in the web app | A **fifth entry in the bottom bar, "Notifiche"** (bell icon): "Attiva notifiche" and the test notification, trackings in progress, rules (list and editor), the log of sent notifications |
 | Y | New screens | **Mocked up on the design canvas and approved before any code** (step 0), as in Phase 2: alerts banner on the stop page, "Avvisami" on a departure, the live tracking page, the Notifiche screen, the rule editor, the GTT row on the info screen. Approved on 2026-11-04: [design canvas](https://claude.ai/artifact/GEpFZXDq4dVt5SzF1p4NZP), rows "Fase 3" |
@@ -64,6 +64,14 @@ Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xco
 | AH | Pause | `paused_until` is the **last day skipped, included**: "salta oggi" is `until` today, and "in pausa fino al 16 novembre" skips the 16th too (changed on 2026-11-05, step 3; the plan said "until tomorrow"). A pause without `until` turns the rule off (`enabled: false`); `resume` turns it on and clears `paused_until`. `until` is between today and a year from today |
 | AI | Days of a rule | **Calendar days in Europe/Rome** of the rule's time, not GTT's service date: "Saturday 00:30" runs in the night between Friday and Saturday (decided 2026-11-05, step 3) |
 | AJ | Today's state of a rule | **Computed** at each request from the calendar (`today`: due at a time, not scheduled, holiday, paused, disabled; `next`: the next occurrence), until the scheduler adds what happened (step 5). One-off trackings (`date` set) are refused by `/api/rules`: they are created by `/api/trackings` (step 6), while the calendar already handles them (decided 2026-11-05, step 3) |
+| AK | Signing VAPID | **Our own ES256 JWT with `p256`**; `web-push-native` without its `vapid` feature, only for the `aes128gcm` encryption (decided 2026-11-05, step 4). 37 new crates instead of 83, and no `rsa` 0.9 (advisory RUSTSEC-2023-0071, no fix) pulled in by `jwt-simple` |
+| AL | Log of sent notifications | The `notifications` table and `GET /api/notifications` come **with the scheduler (step 5)**, which decides `kind` and `rule_id`; the test notification is not recorded (decided 2026-11-05, step 4, as decision AF) |
+| AM | Where the server sends pushes | Only to **`https` endpoints of known push services** on their default port: `fcm.googleapis.com`, `push.apple.com`, `push.services.mozilla.com`, `notify.windows.com` and their subdomains; redirects are not followed. Otherwise anyone able to call the API could make the server post to internal addresses (decided 2026-11-05, step 4) |
+| AN | Delivery options | `TTL` 15 minutes (a late transport notification is useless), `Urgency: high`, JWT valid 1 hour (decided 2026-11-05, step 4) |
+| AO | `Notifier` shape | A trait usable as `Arc<dyn Notifier>` (boxed futures); `send` delivers to every device and reports `sent`, `removed`, `failed`; one device failing never stops the others; 404 and 410 delete the subscription (decided 2026-11-05, step 4) |
+| AP | Keeping subscriptions alive | When the Notifiche screen opens with permission granted, the web app **sends its subscription again** (upsert by endpoint); a subscription made with another server key is replaced (decided 2026-11-05, step 4) |
+| AQ | States without a mockup | Notifications blocked, push disabled on the server, browser not supported: **text variants of the approved card**, no new mockup. On an iPhone outside the Home Screen, the mockup's warning, linking to `/info` (decided 2026-11-05, step 4) |
+| AR | Device label | From the `User-Agent` on the server: iPhone, iPad, Android, Mac, Windows, otherwise none. An iPad in desktop mode says "Macintosh" and is labelled Mac (decided 2026-11-05, step 4) |
 
 ## 3. What we know about the upstream
 
@@ -227,7 +235,7 @@ Implementations: `WebPushNotifier` and `LogNotifier` (development and tests).
 4. The service worker in the web app shows the notification; tapping it opens the right page (departures of a stop, live page of a tracking).
 5. Subscriptions that the push service reports as gone (HTTP 404 or 410) are deleted.
 
-Library: `web-push-native` (decision V). It encrypts the payload and signs the VAPID header, and returns an `http::Request`; the request is sent with the shared `reqwest` client, so timeouts, rustls and logging are the same as for the upstream calls.
+Library: `web-push-native` (decision V). It encrypts the payload and returns an `http::Request`; the VAPID header is signed by our code (decision AK), and the request is sent with a `reqwest` client of its own (rustls, 10-second timeout, no redirects: decision AM).
 
 ### Message examples (Italian, decision J)
 
@@ -417,7 +425,7 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 1. **GTT real-time predictions**: real-time client for trip updates, merge rules, `source` in departures, `/api/status` and the GTT rows on the info screen. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
 2. **Alerts**: GTFS static download (`stops.txt` → `gtt_stops`), reading, linking, `alerts` in the departures of a stop, `/api/alerts`, banner on the stop page of the web app, the GTT static data row on the info screen. Decisions O and Q changed, AD and AE added on 2026-11-04.
 3. **Rules**: the `rules` table, typed config, CRUD API with pause and resume, holiday calendar, occurrence calculation with fake clock. Decision K changed and AF–AJ added on 2026-11-05.
-4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, push handling in the service worker, the Notifiche tab with "Attiva notifiche" and the test notification. Check: a test notification arrives in Chrome on the Mac.
+4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, push handling in the service worker, the Notifiche tab with "Attiva notifiche" and the test notification. Check: a test notification arrives in Chrome on the Mac. Decisions AK–AR added on 2026-11-05.
 5. **Scheduler and summaries**: tick, the `rule_runs` table (decision AF), summary rules, `/api/rules/{id}/test`, notification of new alerts on the lines of a rule.
 6. **Tracking**: state machine, "Avvisami" on a departure, recurring tracking rules, vehicle positions, the live page.
 7. **Rules in the web app**: list and editor in the Notifiche tab: create, edit, pause, skip today, test, delete.
