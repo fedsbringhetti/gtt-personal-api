@@ -10,12 +10,13 @@ export type Route =
   | { name: 'stop'; stop: string; lines: string[] }
   | { name: 'near' }
   | { name: 'favorites' }
+  | { name: 'notifications' }
   | { name: 'info' }
   | { name: 'design' }
   | { name: 'not-found' }
 
-/** The four entries of the bottom bar. */
-export type Tab = 'home' | 'search' | 'near' | 'favorites'
+/** The five entries of the bottom bar. */
+export type Tab = 'home' | 'search' | 'near' | 'favorites' | 'notifications'
 
 export interface RouteOptions {
   /** The design page exists only in development builds. */
@@ -35,6 +36,8 @@ export function matchRoute(pathname: string, search: string, options: RouteOptio
       return { name: 'near' }
     case '/preferiti':
       return { name: 'favorites' }
+    case '/notifiche':
+      return { name: 'notifications' }
     case '/info':
       return { name: 'info' }
     case '/prova-grafica':
@@ -78,6 +81,8 @@ export function pathOf(route: Route): string {
       return '/vicino'
     case 'favorites':
       return '/preferiti'
+    case 'notifications':
+      return '/notifiche'
     case 'info':
       return '/info'
     case 'design':
@@ -88,7 +93,7 @@ export function pathOf(route: Route): string {
 }
 
 /**
- * The bottom bar entry to highlight. The four main screens are their own entry; a stop or
+ * The bottom bar entry to highlight. The five main screens are their own entry; a stop or
  * the info screen keeps the entry they were opened from, as in the iPhone's own apps.
  */
 export function tabOf(route: Route, previous: Tab): Tab {
@@ -97,6 +102,7 @@ export function tabOf(route: Route, previous: Tab): Tab {
     case 'search':
     case 'near':
     case 'favorites':
+    case 'notifications':
       return route.name
     default:
       return previous

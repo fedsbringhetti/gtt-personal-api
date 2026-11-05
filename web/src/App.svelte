@@ -6,6 +6,7 @@
   import Home from './screens/Home.svelte'
   import Info from './screens/Info.svelte'
   import Near from './screens/Near.svelte'
+  import Notifications from './screens/Notifications.svelte'
   import NotFound from './screens/NotFound.svelte'
   import Search from './screens/Search.svelte'
   import Stop from './screens/Stop.svelte'
@@ -29,6 +30,8 @@
     <Near />
   {:else if navigation.route.name === 'favorites'}
     <Favorites />
+  {:else if navigation.route.name === 'notifications'}
+    <Notifications />
   {:else if navigation.route.name === 'info'}
     <Info />
   {:else if navigation.route.name === 'design' && designPage}

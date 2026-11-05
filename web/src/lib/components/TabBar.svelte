@@ -22,7 +22,7 @@
     bottom: 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     height: var(--tab-bar-height);
     padding: 0 8px env(safe-area-inset-bottom);
     background: var(--surface);

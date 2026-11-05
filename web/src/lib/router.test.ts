@@ -9,6 +9,8 @@ describe('matchRoute', () => {
     expect(matchRoute('/', '', prod)).toEqual({ name: 'home' })
     expect(matchRoute('/vicino', '', prod)).toEqual({ name: 'near' })
     expect(matchRoute('/preferiti', '', prod)).toEqual({ name: 'favorites' })
+    expect(matchRoute('/notifiche', '', prod)).toEqual({ name: 'notifications' })
+    expect(matchRoute('/notifiche/', '', prod)).toEqual({ name: 'notifications' })
     expect(matchRoute('/info', '', prod)).toEqual({ name: 'info' })
   })
 
@@ -66,6 +68,7 @@ describe('pathOf', () => {
       { name: 'stop', stop: '39', lines: ['4', '9B'] },
       { name: 'near' },
       { name: 'favorites' },
+      { name: 'notifications' },
       { name: 'info' },
       { name: 'design' },
     ]
@@ -80,6 +83,7 @@ describe('tabOf', () => {
   it('highlights the main screens themselves', () => {
     expect(tabOf({ name: 'near' }, 'home')).toBe('near')
     expect(tabOf({ name: 'search', query: 'x' }, 'favorites')).toBe('search')
+    expect(tabOf({ name: 'notifications' }, 'home')).toBe('notifications')
   })
 
   it('keeps the previous entry on a stop or the info screen', () => {
