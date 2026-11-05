@@ -1,6 +1,6 @@
 # Phase 3 — GTT data, rules, trip tracking and notifications: detailed plan
 
-Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02. Mockups approved on 2026-11-04 (step 0), with decisions Z–AC; decisions O and Q changed and AD–AE added with step 2 (alerts), the same day.
+Status: **approved** on 2026-11-02, after Phase 2 (`v0.2.0`). Decisions G–M confirmed on 2026-10-30; GTT open data (N–Q) and libraries, navigation and mockups (U–Y) added on 2026-11-02. Mockups approved on 2026-11-04 (step 0), with decisions Z–AC; decisions O and Q changed and AD–AE added with step 2 (alerts), the same day. Decision K changed and AF–AJ added with step 3 (rules), on 2026-11-05.
 
 Until 2026-10-30 this was Phase 2, with Telegram as the notification channel. The phases were swapped so that notifications can use Web Push from the web app built in Phase 2.
 
@@ -41,7 +41,7 @@ Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xco
 | H | Rule types | **Summary** and **tracking**. Tracking can start **on the fly** (from the departures list, for today) or from a **recurring rule**. Events: reminders N minutes before the expected departure (chosen by the user, default 10 and 5), delay over a threshold, cancellation, run not found; plus a live page. **No "leave now"**: walking time is not computed (future idea in `PLAN.md`) |
 | I | Managing rules | From the web app, through the API |
 | J | Language of user-facing text | Italian (notifications and web app); code, identifiers, logs and docs in English |
-| K | Public holidays | Rules can skip Italian national holidays plus 24 June (San Giovanni, Turin), enabled by default per rule. Personal dates are a future idea in `PLAN.md` |
+| K | Public holidays | Rules can skip Italian national holidays plus 24 June (San Giovanni, Turin), enabled by default per rule. National holidays include Easter Sunday and Monday (computed) and, from 2026, 4 October (San Francesco, law 151/2025; added on 2026-11-05). Personal dates are a future idea in `PLAN.md` |
 | L | Delay history | Yes, for tracked runs only, stored **per run** (service date, trip, stop), not per rule or per user, so two trackings of the same run share one record and future users would share the data. To be evaluated after some weeks of use |
 | M | Missed schedule (server off or restarting at due time) | Summaries: sent if at most 5 minutes late, otherwise skipped and logged. Tracking: resumes from its saved state; an alert that is no longer useful (the bus has left) is dropped, never sent late |
 | N | Real-time source (`PLAN.md` decision 10) | For **urban** runs, GTT's trip updates; otherwise OpenTripPlanner's real time; otherwise the scheduled time. **One source per departure**, never mixed. OpenTripPlanner still decides which runs serve the stop, their line, destination, scheduled time and stop sequence. Merge rules in section 4 |
@@ -59,6 +59,11 @@ Checked on the Mac in Chrome, where `localhost` allows Web Push (there is no Xco
 | AC | Comparison with OpenTripPlanner | Counted **per day** (Europe/Rome, reset at midnight), **once per run and stop**, so reloading a page does not count twice; `/api/status` shows today's mismatches and the median difference |
 | AD | Line names in alerts | From the **stop index** (OpenTripPlanner's names and modes, the same as the departures: `17BU` is "17/"), falling back to the route id without its final `U` or `E` for lines no stop serves (decided 2026-11-04, step 2). Rejected: `routes.txt`, which has the same names but also misses the temporary lines (`S45U`, `B1U`) |
 | AE | Alerts in the favorites' departures | **Not added** for now: no screen shows them (decided 2026-11-04, step 2). Only the departures of a stop and `/api/alerts` carry alerts |
+| AF | When `rule_runs` is created | **With the scheduler (step 5)**, not with `rules` (decided 2026-11-05, step 3): no code would use it before, and the scheduler decides the shape of its state; a migration cannot change once merged |
+| AG | Rules in the API | **`kind` plus a `config` object** with the kind's fields, as in the database; unknown fields are refused. Defaults are **stored** in `config` when a rule is created, so changing a default later does not change existing rules. Lines are checked against the lines of the stop in the index and stored with the index's spelling; a tracking rule has exactly one. `kind` cannot change; `PATCH` replaces `config` whole (decided 2026-11-05, step 3). Rejected: all fields at one level, which cannot refuse unknown fields |
+| AH | Pause | `paused_until` is the **last day skipped, included**: "salta oggi" is `until` today, and "in pausa fino al 16 novembre" skips the 16th too (changed on 2026-11-05, step 3; the plan said "until tomorrow"). A pause without `until` turns the rule off (`enabled: false`); `resume` turns it on and clears `paused_until`. `until` is between today and a year from today |
+| AI | Days of a rule | **Calendar days in Europe/Rome** of the rule's time, not GTT's service date: "Saturday 00:30" runs in the night between Friday and Saturday (decided 2026-11-05, step 3) |
+| AJ | Today's state of a rule | **Computed** at each request from the calendar (`today`: due at a time, not scheduled, holiday, paused, disabled; `next`: the next occurrence), until the scheduler adds what happened (step 5). One-off trackings (`date` set) are refused by `/api/rules`: they are created by `/api/trackings` (step 6), while the calendar already handles them (decided 2026-11-05, step 3) |
 
 ## 3. What we know about the upstream
 
@@ -142,7 +147,7 @@ Mismatches show up in `/api/status`; a sudden rise usually means the two sources
 | `days` | `["mon","tue","wed","thu","fri"]` | days of the week; empty for a one-off tracking |
 | `date` | `2026-11-03` | only for a one-off tracking started on the fly |
 | `skip_holidays` | `true` | decision K |
-| `paused_until` | `2026-11-03` | optional; used by "pause" and "skip today" |
+| `paused_until` | `2026-11-03` | optional; the last day skipped, included; used by "pause" and "skip today" (decision AH) |
 
 A tracking started on the fly is stored as a one-off `track` rule with `date` set and no `days`; it is removed automatically when it ends. Everything else (scheduler, state, history) is shared with recurring rules.
 
@@ -270,12 +275,13 @@ CREATE TABLE rules (
   days          TEXT NOT NULL,        -- JSON: ["mon", ...]; empty for one-off trackings
   date          TEXT,                 -- one-off trackings only
   skip_holidays INTEGER NOT NULL DEFAULT 1,
-  paused_until  TEXT,
+  paused_until  TEXT,                 -- last day skipped, included (decision AH)
   config        TEXT NOT NULL,        -- JSON with the kind-specific fields (section 5)
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
 
+-- Created with the scheduler, step 5 (decision AF).
 CREATE TABLE rule_runs (
   rule_id    INTEGER NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
   date       TEXT NOT NULL,           -- service date, Europe/Rome
@@ -341,8 +347,8 @@ CREATE TABLE notified_alerts (
 |--------|------|-------------|
 | GET, POST | `/api/rules` | list rules with today's state; create a rule |
 | GET, PATCH, DELETE | `/api/rules/{id}` | details, edit, delete |
-| POST | `/api/rules/{id}/pause` | pause, with optional `until` date ("skip today" = until tomorrow) |
-| POST | `/api/rules/{id}/resume` | resume |
+| POST | `/api/rules/{id}/pause` | pause until a date, included ("skip today" = until today); without `until`, turn the rule off (decision AH) |
+| POST | `/api/rules/{id}/resume` | resume: turn on, clear the pause |
 | POST | `/api/rules/{id}/test` | run the rule now and send the result |
 | GET | `/api/rules/{id}/runs` | recent runs |
 | POST | `/api/trackings` | track a run on the fly: `{"stop": "39", "trip_id": "gtt:..."}` |
@@ -410,9 +416,9 @@ Each step in its own branch with a PR to `main` and its chapter in `docs/develop
 0. **Mockups** of the new screens (section 11) on the design canvas, approved before step 1. No code. Done on 2026-11-04.
 1. **GTT real-time predictions**: real-time client for trip updates, merge rules, `source` in departures, `/api/status` and the GTT rows on the info screen. Check: departures of an urban stop show `source: "gtt"`, and fall back to OpenTripPlanner with the feed disabled.
 2. **Alerts**: GTFS static download (`stops.txt` → `gtt_stops`), reading, linking, `alerts` in the departures of a stop, `/api/alerts`, banner on the stop page of the web app, the GTT static data row on the info screen. Decisions O and Q changed, AD and AE added on 2026-11-04.
-3. **Rules**: migrations, typed config, CRUD API, holiday calendar, occurrence calculation with fake clock.
+3. **Rules**: the `rules` table, typed config, CRUD API with pause and resume, holiday calendar, occurrence calculation with fake clock. Decision K changed and AF–AJ added on 2026-11-05.
 4. **Web Push**: VAPID keys, subscriptions, `WebPushNotifier`, `LogNotifier`, push handling in the service worker, the Notifiche tab with "Attiva notifiche" and the test notification. Check: a test notification arrives in Chrome on the Mac.
-5. **Scheduler and summaries**: tick, `rule_runs`, summary rules, `/api/rules/{id}/test`, notification of new alerts on the lines of a rule.
+5. **Scheduler and summaries**: tick, the `rule_runs` table (decision AF), summary rules, `/api/rules/{id}/test`, notification of new alerts on the lines of a rule.
 6. **Tracking**: state machine, "Avvisami" on a departure, recurring tracking rules, vehicle positions, the live page.
 7. **Rules in the web app**: list and editor in the Notifiche tab: create, edit, pause, skip today, test, delete.
 8. **Health alerts**: down, recovered, schema changed, sync failed, GTT feeds.
