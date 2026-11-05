@@ -2,7 +2,7 @@ use std::{net::SocketAddr, path::PathBuf, time::Duration};
 
 use chrono::NaiveTime;
 
-use crate::{api::auth::ApiToken, stops::Feeds};
+use crate::{api::auth::ApiToken, notify::vapid::VapidKey, stops::Feeds};
 
 const DEFAULT_BIND_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_UPSTREAM_URL: &str = "https://plan.muoversiatorino.it/otp/routers/mato/index/graphql";
@@ -38,6 +38,11 @@ pub struct Config {
     /// GTT's GTFS static archive, for its `stops.txt`. `None` disables it: alerts are then
     /// linked by line only.
     pub gtt_gtfs_url: Option<reqwest::Url>,
+    /// Private key of the Web Push (VAPID) identity. `None` disables Web Push: notifications
+    /// are only written to the log.
+    pub vapid_private_key: Option<VapidKey>,
+    /// Contact of the VAPID identity (`mailto:` or `https:`); set whenever the key is.
+    pub vapid_subject: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -58,6 +63,7 @@ impl Config {
 
     /// Reads the configuration through `lookup`, so tests do not touch the real environment.
     pub fn from_lookup(lookup: impl Fn(&str) -> Option<String>) -> Result<Self, ConfigError> {
+        let (vapid_private_key, vapid_subject) = parse_vapid(&lookup)?;
         Ok(Self {
             bind_addr: parse_or_default(&lookup, "BIND_ADDR", DEFAULT_BIND_ADDR)?,
             upstream_url: parse_or_default(&lookup, "UPSTREAM_URL", DEFAULT_UPSTREAM_URL)?,
@@ -115,8 +121,38 @@ impl Config {
                 DEFAULT_GTT_GTFS_URL,
                 parse_optional_url,
             )?,
+            vapid_private_key,
+            vapid_subject,
         })
     }
+}
+
+/// `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`: the subject is required with a key and ignored
+/// without one.
+fn parse_vapid(
+    lookup: &impl Fn(&str) -> Option<String>,
+) -> Result<(Option<VapidKey>, Option<String>), ConfigError> {
+    let Some(key) = lookup("VAPID_PRIVATE_KEY").filter(|value| !value.trim().is_empty()) else {
+        return Ok((None, None));
+    };
+    let key = key.parse().map_err(|reason| ConfigError::Invalid {
+        var: "VAPID_PRIVATE_KEY",
+        value: "***".to_owned(),
+        reason,
+    })?;
+    let subject = lookup("VAPID_SUBJECT").unwrap_or_default();
+    let subject = subject.trim();
+    let rest = subject
+        .strip_prefix("mailto:")
+        .or_else(|| subject.strip_prefix("https:"));
+    if rest.is_none_or(|rest| rest.is_empty()) {
+        return Err(ConfigError::Invalid {
+            var: "VAPID_SUBJECT",
+            value: subject.to_owned(),
+            reason: "required with VAPID_PRIVATE_KEY, must start with mailto: or https:".to_owned(),
+        });
+    }
+    Ok((Some(key), Some(subject.to_owned())))
 }
 
 /// An empty value means "disabled".
@@ -189,6 +225,76 @@ mod tests {
         assert_eq!(config.gtt_trip_updates_cache_ttl, Duration::from_secs(20));
         assert_eq!(config.gtt_alerts_poll, Duration::from_secs(300));
         assert_eq!(config.gtt_gtfs_url.unwrap().as_str(), DEFAULT_GTT_GTFS_URL);
+        assert_eq!(config.vapid_private_key, None);
+        assert_eq!(config.vapid_subject, None);
+    }
+
+    #[test]
+    fn reads_vapid_settings() {
+        let key = VapidKey::generate();
+        let private = key.private_key_base64();
+
+        // Unset or empty: no Web Push, and the subject is ignored.
+        for vars in [
+            vec![],
+            vec![("VAPID_PRIVATE_KEY", "")],
+            vec![("VAPID_PRIVATE_KEY", " "), ("VAPID_SUBJECT", "nonsense")],
+        ] {
+            let config = config_from(&vars).unwrap();
+            assert_eq!(config.vapid_private_key, None);
+            assert_eq!(config.vapid_subject, None);
+        }
+
+        for subject in ["mailto:me@example.com", "https://example.com/contact"] {
+            let config = config_from(&[
+                ("VAPID_PRIVATE_KEY", private.as_str()),
+                ("VAPID_SUBJECT", subject),
+            ])
+            .unwrap();
+            assert_eq!(config.vapid_private_key, Some(key.clone()));
+            assert_eq!(config.vapid_subject.as_deref(), Some(subject));
+        }
+
+        // Invalid key: the error does not show the value.
+        let err = config_from(&[
+            ("VAPID_PRIVATE_KEY", "bad key"),
+            ("VAPID_SUBJECT", "mailto:me@example.com"),
+        ])
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            ConfigError::Invalid {
+                var: "VAPID_PRIVATE_KEY",
+                ..
+            }
+        ));
+        assert!(!err.to_string().contains("bad key"), "{err}");
+
+        // Key without a usable subject.
+        for vars in [
+            vec![("VAPID_PRIVATE_KEY", private.as_str())],
+            vec![
+                ("VAPID_PRIVATE_KEY", private.as_str()),
+                ("VAPID_SUBJECT", "me@example.com"),
+            ],
+            vec![
+                ("VAPID_PRIVATE_KEY", private.as_str()),
+                ("VAPID_SUBJECT", "mailto:"),
+            ],
+            vec![
+                ("VAPID_PRIVATE_KEY", private.as_str()),
+                ("VAPID_SUBJECT", "https:"),
+            ],
+        ] {
+            let err = config_from(&vars).unwrap_err();
+            assert!(matches!(
+                err,
+                ConfigError::Invalid {
+                    var: "VAPID_SUBJECT",
+                    ..
+                }
+            ));
+        }
     }
 
     #[test]

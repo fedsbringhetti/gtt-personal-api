@@ -71,11 +71,12 @@ ENTRYPOINT ["gtt-personal-api"]
 
 ```rust
 let args: Vec<String> = std::env::args().skip(1).collect();
-match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+let args: Vec<&str> = args.iter().map(String::as_str).collect();
+match args.as_slice() {
     [] => serve(config).await,
     ["healthcheck"] => healthcheck(config.bind_addr).await,
     _ => {
-        eprintln!("usage: gtt-personal-api [healthcheck]");
+        eprintln!("usage: gtt-personal-api [healthcheck | vapid-keys]");
         ExitCode::from(2)
     }
 }

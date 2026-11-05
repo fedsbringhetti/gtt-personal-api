@@ -16,6 +16,7 @@ use gtt_personal_api::{
         alerts::{self, AlertsService},
         static_data::{self, GttStatic},
     },
+    notify::vapid::VapidKey,
     rules::RuleStore,
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
@@ -31,6 +32,14 @@ async fn main() -> ExitCode {
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
 
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+
+    // Needs no configuration, which may well be invalid or incomplete when this is run.
+    if let ["vapid-keys"] = args.as_slice() {
+        return vapid_keys();
+    }
+
     let config = match Config::from_env() {
         Ok(config) => config,
         Err(err) => {
@@ -39,20 +48,24 @@ async fn main() -> ExitCode {
         }
     };
 
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    match args
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<_>>()
-        .as_slice()
-    {
+    match args.as_slice() {
         [] => serve(config).await,
         ["healthcheck"] => healthcheck(config.bind_addr).await,
         _ => {
-            eprintln!("usage: gtt-personal-api [healthcheck]");
+            eprintln!("usage: gtt-personal-api [healthcheck | vapid-keys]");
             ExitCode::from(2)
         }
     }
+}
+
+/// Prints a new VAPID key pair: the private key goes in `VAPID_PRIVATE_KEY`, the public one is
+/// derived from it by the service, and printed here only for reference.
+fn vapid_keys() -> ExitCode {
+    let key = VapidKey::generate();
+    println!("VAPID_PRIVATE_KEY={}", key.private_key_base64());
+    println!("# public key: {}", key.public_key_base64());
+    println!("# also set VAPID_SUBJECT=mailto:you@example.com (or an https: URL)");
+    ExitCode::SUCCESS
 }
 
 /// Runs the service until Ctrl+C or SIGTERM.
