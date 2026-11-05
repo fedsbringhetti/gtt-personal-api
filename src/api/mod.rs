@@ -9,6 +9,8 @@ use crate::{
     departures::DeparturesService,
     favorites::FavoriteStore,
     gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
+    notify::Notifier,
+    push::{EndpointPolicy, SubscriptionStore},
     rules::RuleStore,
     stops::{Feeds, StopIndex},
     time::Clock,
@@ -21,6 +23,8 @@ pub mod auth;
 mod error;
 mod favorites;
 mod health;
+mod notifications;
+mod push;
 mod rules;
 mod status;
 mod stops;
@@ -31,6 +35,13 @@ pub struct AppState {
     pub stops: StopIndex,
     pub favorites: FavoriteStore,
     pub rules: RuleStore,
+    pub subscriptions: SubscriptionStore,
+    /// Delivers notifications: Web Push, or the log without VAPID keys.
+    pub notifier: Arc<dyn Notifier>,
+    /// The VAPID public key the browsers subscribe with; `None` without a VAPID key.
+    pub vapid_public_key: Option<Arc<str>>,
+    /// Which push services subscriptions may point to.
+    pub push_endpoints: EndpointPolicy,
     pub default_feeds: Feeds,
     pub upstream_health: Arc<UpstreamHealth>,
     /// GTT's real-time data, for `/api/status`; `None` when disabled.
@@ -69,7 +80,13 @@ pub fn router(state: AppState) -> Router {
             get(rules::get).patch(rules::update).delete(rules::delete),
         )
         .route("/api/rules/{id}/pause", post(rules::pause))
-        .route("/api/rules/{id}/resume", post(rules::resume));
+        .route("/api/rules/{id}/resume", post(rules::resume))
+        .route("/api/push/key", get(push::public_key))
+        .route(
+            "/api/push/subscriptions",
+            post(push::subscribe).delete(push::unsubscribe),
+        )
+        .route("/api/notifications/test", post(notifications::test));
     if let Some(token) = state.api_token.clone() {
         api = api.route_layer(middleware::from_fn_with_state(token, auth::require_token));
     }

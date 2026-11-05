@@ -16,7 +16,8 @@ use gtt_personal_api::{
         alerts::{self, AlertsService},
         static_data::{self, GttStatic},
     },
-    notify::vapid::VapidKey,
+    notify::{Notifier, log::LogNotifier, vapid::VapidKey, webpush::WebPushNotifier},
+    push::{EndpointPolicy, SubscriptionStore},
     rules::RuleStore,
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
@@ -104,6 +105,31 @@ async fn serve(config: Config) -> ExitCode {
     let stops = StopIndex::new(pool.clone());
     let favorites = FavoriteStore::new(pool.clone());
     let rules = RuleStore::new(pool.clone());
+    let subscriptions = SubscriptionStore::new(pool.clone());
+    let (notifier, vapid_public_key): (Arc<dyn Notifier>, Option<Arc<str>>) =
+        match (&config.vapid_private_key, &config.vapid_subject) {
+            (Some(key), Some(subject)) => {
+                match WebPushNotifier::new(
+                    subscriptions.clone(),
+                    key.clone(),
+                    subject.clone(),
+                    clock.clone(),
+                ) {
+                    Ok(notifier) => {
+                        tracing::info!("notifications: Web Push");
+                        (Arc::new(notifier), Some(key.public_key_base64().into()))
+                    }
+                    Err(err) => {
+                        tracing::error!("cannot create the Web Push client: {err}");
+                        return ExitCode::FAILURE;
+                    }
+                }
+            }
+            _ => {
+                tracing::info!("VAPID_PRIVATE_KEY is not set: notifications only go to the log");
+                (Arc::new(LogNotifier), None)
+            }
+        };
     sync::spawn(
         stops.clone(),
         upstream.clone(),
@@ -162,6 +188,10 @@ async fn serve(config: Config) -> ExitCode {
         stops,
         favorites,
         rules,
+        subscriptions,
+        notifier,
+        vapid_public_key,
+        push_endpoints: EndpointPolicy::push_services(),
         default_feeds: config.default_feeds.clone(),
         upstream_health,
         gtt,

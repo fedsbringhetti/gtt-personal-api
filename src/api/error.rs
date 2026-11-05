@@ -9,8 +9,8 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::{
-    departures::DeparturesError, favorites::FavoritesError, rules::RulesError, stops::IndexError,
-    upstream::UpstreamError,
+    departures::DeparturesError, favorites::FavoritesError, notify::NotifyError, push::PushError,
+    rules::RulesError, stops::IndexError, upstream::UpstreamError,
 };
 
 /// Errors returned to API clients as `{"error": {"code": ..., "message": ...}}`.
@@ -26,6 +26,8 @@ pub enum ApiError {
     Upstream(String),
     /// The stop index has not been synced yet.
     IndexNotReady,
+    /// No VAPID key is configured, so there is no Web Push.
+    PushDisabled,
     Internal,
 }
 
@@ -71,6 +73,11 @@ impl ApiError {
                 StatusCode::SERVICE_UNAVAILABLE,
                 "index_not_ready",
                 "The stop index is still being downloaded, try again shortly".to_owned(),
+            ),
+            Self::PushDisabled => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "push_disabled",
+                "Web Push is not configured on the server (no VAPID key)".to_owned(),
             ),
             Self::Internal => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -128,6 +135,20 @@ impl From<FavoritesError> for ApiError {
 impl From<RulesError> for ApiError {
     fn from(err: RulesError) -> Self {
         tracing::error!("rules: {err}");
+        Self::Internal
+    }
+}
+
+impl From<PushError> for ApiError {
+    fn from(err: PushError) -> Self {
+        tracing::error!("push subscriptions: {err}");
+        Self::Internal
+    }
+}
+
+impl From<NotifyError> for ApiError {
+    fn from(err: NotifyError) -> Self {
+        tracing::error!("notifications: {err}");
         Self::Internal
     }
 }
