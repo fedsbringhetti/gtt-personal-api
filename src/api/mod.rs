@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use axum::{
     Router, middleware,
-    routing::{get, patch},
+    routing::{get, patch, post},
 };
 
 use crate::{
     departures::DeparturesService,
     favorites::FavoriteStore,
     gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
+    rules::RuleStore,
     stops::{Feeds, StopIndex},
     time::Clock,
     upstream::health::UpstreamHealth,
@@ -20,6 +21,7 @@ pub mod auth;
 mod error;
 mod favorites;
 mod health;
+mod rules;
 mod status;
 mod stops;
 
@@ -28,6 +30,7 @@ pub struct AppState {
     pub departures: Arc<DeparturesService>,
     pub stops: StopIndex,
     pub favorites: FavoriteStore,
+    pub rules: RuleStore,
     pub default_feeds: Feeds,
     pub upstream_health: Arc<UpstreamHealth>,
     /// GTT's real-time data, for `/api/status`; `None` when disabled.
@@ -59,7 +62,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/favorites/{id}",
             patch(favorites::update).delete(favorites::delete),
-        );
+        )
+        .route("/api/rules", get(rules::list).post(rules::create))
+        .route(
+            "/api/rules/{id}",
+            get(rules::get).patch(rules::update).delete(rules::delete),
+        )
+        .route("/api/rules/{id}/pause", post(rules::pause))
+        .route("/api/rules/{id}/resume", post(rules::resume));
     if let Some(token) = state.api_token.clone() {
         api = api.route_layer(middleware::from_fn_with_state(token, auth::require_token));
     }

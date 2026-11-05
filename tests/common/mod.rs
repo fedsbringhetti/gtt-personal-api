@@ -15,6 +15,7 @@ use gtt_personal_api::{
     departures::DeparturesService,
     favorites::FavoriteStore,
     gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
+    rules::RuleStore,
     stops::{Feeds, StopIndex, sync::sync_once},
     time::{Clock, FixedClock},
     upstream::UpstreamClient,
@@ -111,7 +112,8 @@ pub async fn test_app_with(
             clock.clone(),
         )),
         stops: stops.clone(),
-        favorites: FavoriteStore::new(pool),
+        favorites: FavoriteStore::new(pool.clone()),
+        rules: RuleStore::new(pool),
         default_feeds: Feeds::Only(vec!["gtt".to_owned()]),
         upstream_health: upstream.health(),
         gtt,
@@ -142,13 +144,18 @@ pub async fn offline_app() -> Router {
 /// App whose upstream serves `all_stops.json` (44 real stops around Porta Nuova and a few
 /// others), with the index already synced. Keep the server alive for the whole test.
 pub async fn synced_app() -> (TestApp, MockServer) {
+    synced_app_at(at(NOW)).await
+}
+
+/// `synced_app` with the clock at `now`.
+pub async fn synced_app_at(now: DateTime<Utc>) -> (TestApp, MockServer) {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .respond_with(ResponseTemplate::new(200).set_body_json(fixture("all_stops.json")))
         .mount(&server)
         .await;
-    let app = test_app(&server.uri(), at(NOW), Duration::from_secs(2)).await;
-    let count = sync_once(&app.stops, &app.upstream, at(NOW)).await.unwrap();
+    let app = test_app(&server.uri(), now, Duration::from_secs(2)).await;
+    let count = sync_once(&app.stops, &app.upstream, now).await.unwrap();
     assert_eq!(count, 44);
     (app, server)
 }

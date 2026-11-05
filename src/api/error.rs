@@ -9,7 +9,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::{
-    departures::DeparturesError, favorites::FavoritesError, stops::IndexError,
+    departures::DeparturesError, favorites::FavoritesError, rules::RulesError, stops::IndexError,
     upstream::UpstreamError,
 };
 
@@ -21,6 +21,7 @@ pub enum ApiError {
     Unauthorized,
     StopNotFound(String),
     FavoriteNotFound(i64),
+    RuleNotFound(i64),
     UpstreamTimeout,
     Upstream(String),
     /// The stop index has not been synced yet.
@@ -54,6 +55,11 @@ impl ApiError {
                 StatusCode::NOT_FOUND,
                 "favorite_not_found",
                 format!("Favorite {id} not found"),
+            ),
+            Self::RuleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                "rule_not_found",
+                format!("Rule {id} not found"),
             ),
             Self::UpstreamTimeout => (
                 StatusCode::GATEWAY_TIMEOUT,
@@ -115,6 +121,13 @@ impl From<IndexError> for ApiError {
 impl From<FavoritesError> for ApiError {
     fn from(err: FavoritesError) -> Self {
         tracing::error!("favorites: {err}");
+        Self::Internal
+    }
+}
+
+impl From<RulesError> for ApiError {
+    fn from(err: RulesError) -> Self {
+        tracing::error!("rules: {err}");
         Self::Internal
     }
 }
