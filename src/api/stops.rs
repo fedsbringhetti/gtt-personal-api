@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use super::{AppState, error::ApiError};
 use crate::{
     departures::{Departure, FETCH_WINDOW, Filter, StopDepartures, StopRef},
+    gtt::alerts::Alert,
     stops::{Feeds, NearbyStop, StopInfo},
     time::TIME_ZONE,
 };
@@ -104,7 +105,7 @@ pub async fn details(
 }
 
 /// Before the first sync the index is empty, and "no results" would be misleading.
-async fn ensure_index_ready(state: &AppState) -> Result<(), ApiError> {
+pub(super) async fn ensure_index_ready(state: &AppState) -> Result<(), ApiError> {
     match state.stops.last_sync().await? {
         Some(_) => Ok(()),
         None => Err(ApiError::IndexNotReady),
@@ -153,6 +154,9 @@ pub struct DeparturesResponse {
     /// The upstream is failing and this is the last good data (at most 2 minutes old).
     stale: bool,
     departures: Vec<DepartureView>,
+    /// GTT's active alerts for this stop, whatever the line filter; empty when GTT's data is
+    /// disabled.
+    alerts: Vec<Alert>,
 }
 
 #[derive(Debug, Serialize)]
@@ -177,6 +181,7 @@ pub async fn departures(
     let data = &fetched.data;
     let now = state.clock.now();
     let departures = departure_views(data, &filter, now);
+    let alerts = stop_alerts(&state, &stop_id, now).await?;
 
     Ok(Json(DeparturesResponse {
         stop: data.stop.clone(),
@@ -184,7 +189,27 @@ pub async fn departures(
         fetched_at: data.fetched_at.with_timezone(&TIME_ZONE).trunc_subsecs(0),
         stale: fetched.stale,
         departures,
+        alerts,
     }))
+}
+
+/// GTT's alerts for a stop. Alerts linked by line need the lines serving it, from the stop
+/// index: a stop missing there gets only the alerts that list it.
+pub(super) async fn stop_alerts(
+    state: &AppState,
+    stop_id: &str,
+    now: DateTime<Utc>,
+) -> Result<Vec<Alert>, ApiError> {
+    let Some(alerts) = &state.alerts else {
+        return Ok(Vec::new());
+    };
+    let lines = state
+        .stops
+        .get(stop_id)
+        .await?
+        .map(|stop| stop.lines)
+        .unwrap_or_default();
+    Ok(alerts.current().for_stop(stop_id, &lines, now))
 }
 
 impl DeparturesParams {

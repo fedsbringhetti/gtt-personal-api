@@ -13,6 +13,8 @@ const DEFAULT_STOPS_SYNC_TIME: &str = "04:00";
 const DEFAULT_FEEDS: &str = "gtt";
 const DEFAULT_GTT_REALTIME_URL: &str = "https://percorsieorari.gtt.to.it/das_gtfsrt/";
 const DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS: &str = "20";
+const DEFAULT_GTT_ALERTS_POLL_SECS: &str = "300";
+const DEFAULT_GTT_GTFS_URL: &str = "https://www.gtt.to.it/open_data/gtt_gtfs.zip";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -31,6 +33,11 @@ pub struct Config {
     /// departures use OpenTripPlanner alone.
     pub gtt_realtime_url: Option<reqwest::Url>,
     pub gtt_trip_updates_cache_ttl: Duration,
+    /// How often GTT's alerts are read (when `gtt_realtime_url` is set).
+    pub gtt_alerts_poll: Duration,
+    /// GTT's GTFS static archive, for its `stops.txt`. `None` disables it: alerts are then
+    /// linked by line only.
+    pub gtt_gtfs_url: Option<reqwest::Url>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -92,6 +99,22 @@ impl Config {
                 "GTT_TRIP_UPDATES_CACHE_SECS",
                 DEFAULT_GTT_TRIP_UPDATES_CACHE_SECS,
             )?),
+            gtt_alerts_poll: Duration::from_secs(parse_with(
+                &lookup,
+                "GTT_ALERTS_POLL_SECS",
+                DEFAULT_GTT_ALERTS_POLL_SECS,
+                |value| match value.parse::<u64>() {
+                    Ok(0) => Err("must be at least 1".to_owned()),
+                    Ok(secs) => Ok(secs),
+                    Err(err) => Err(err.to_string()),
+                },
+            )?),
+            gtt_gtfs_url: parse_with(
+                &lookup,
+                "GTT_GTFS_URL",
+                DEFAULT_GTT_GTFS_URL,
+                parse_optional_url,
+            )?,
         })
     }
 }
@@ -164,6 +187,36 @@ mod tests {
             DEFAULT_GTT_REALTIME_URL
         );
         assert_eq!(config.gtt_trip_updates_cache_ttl, Duration::from_secs(20));
+        assert_eq!(config.gtt_alerts_poll, Duration::from_secs(300));
+        assert_eq!(config.gtt_gtfs_url.unwrap().as_str(), DEFAULT_GTT_GTFS_URL);
+    }
+
+    #[test]
+    fn reads_gtt_alerts_and_static_settings() {
+        let config = config_from(&[
+            ("GTT_ALERTS_POLL_SECS", "60"),
+            ("GTT_GTFS_URL", "http://localhost:9999/gtfs.zip"),
+        ])
+        .unwrap();
+        assert_eq!(config.gtt_alerts_poll, Duration::from_secs(60));
+        assert_eq!(
+            config.gtt_gtfs_url.unwrap().as_str(),
+            "http://localhost:9999/gtfs.zip"
+        );
+        assert_eq!(
+            config_from(&[("GTT_GTFS_URL", "")]).unwrap().gtt_gtfs_url,
+            None
+        );
+        for value in ["0", "five"] {
+            let err = config_from(&[("GTT_ALERTS_POLL_SECS", value)]).unwrap_err();
+            assert!(matches!(
+                err,
+                ConfigError::Invalid {
+                    var: "GTT_ALERTS_POLL_SECS",
+                    ..
+                }
+            ));
+        }
     }
 
     #[test]

@@ -8,7 +8,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 
 - **stop search by name** (the upstream name search is broken) and by position, on a local copy of all ~19,400 stops;
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
-- **GTT's own predictions** for urban runs, read from GTT's open data and merged into the departures (Phase 3);
+- **GTT's own predictions** for urban runs, read from GTT's open data and merged into the departures, and **GTT's service alerts**, linked to the stops they concern (Phase 3);
 - **favorite stops** with labels, line filters and a manual order;
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
 - **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2).
@@ -36,10 +36,15 @@ It is a single Rust binary, with the web app embedded in it and an SQLite databa
                                 (retry, health)      (muoversiatorino.it)
 
   departures ──► GTT client ──────────────────────► GTT GTFS Realtime
-                 (cache 20 s, retry, health)          (trip_update.aspx)
+                 (cache 20 s, retry, health)          (trip_update.aspx, alerts.aspx)
+                     ▲
+  alerts task ───────┘ every 5 min ──► alerts in memory ◄── departures, /api/alerts
+       ▲ (read again after a download)
+  static data task ── nightly check ──────────────────► GTT GTFS static (gtt_gtfs.zip)
+                       └──► gtt_stops (SQLite)
 ```
 
-`main.rs` reads the configuration, opens the database (applying migrations), starts the background sync task and serves HTTP until Ctrl+C or SIGTERM, finishing requests in progress.
+`main.rs` reads the configuration, opens the database (applying migrations), starts the background tasks (stop index sync; with GTT's data on, the alerts and GTT's static data) and serves HTTP until Ctrl+C or SIGTERM, finishing requests in progress.
 
 The router answers `/health` and `/api/*`; every other GET goes to the web app (next section).
 
@@ -50,7 +55,7 @@ The router answers `/health` and `/api/*`; every other GET goes to the web app (
 - **Paths**: an existing file is served as is; `/api/*` and missing files under `/assets/` are 404; any other path gets `index.html`, and the app shows the screen for that path (`/fermata/39`).
 - **Cache**: files under `assets/` are cached by the browser for a year (`immutable`: a new build gives them new names); everything else is `no-cache`, so a new version is picked up at the next load.
 - **Screens**: `App.svelte` shows one screen per path (`/`, `/cerca`, `/fermata/39`, `/vicino`, `/preferiti`, `/info`) with a bottom bar. The app's own router (`web/src/lib/router.ts`) reads the path; a listener on the document turns clicks on the app's links into screen changes without page loads, using the browser history. `/prova-grafica` shows the design base, in development builds only.
-- **Data**: `web/src/lib/api.ts` calls the API with types that mirror the Rust structs and turns failures into one `ApiError`; screens abort calls they no longer need. The stop screen reloads departures every 30 seconds only while the page is visible (`poll.ts`) and filters lines on the data it has (`?linee=` in the address). Names arrive in capitals and are shown as titles (`format.ts`). The near-me screen asks the browser for the position only when it opens, sends it only in that one search and keeps it nowhere (not in the address, not in storage; the server does not log requests).
+- **Data**: `web/src/lib/api.ts` calls the API with types that mirror the Rust structs and turns failures into one `ApiError`; screens abort calls they no longer need. The stop screen reloads departures every 30 seconds only while the page is visible (`poll.ts`) and filters lines on the data it has (`?linee=` in the address). GTT's alerts arrive with the departures; the stop screen shows those of the lines on screen in a banner closed by default (`AlertsBanner.svelte`) and marks the departures of lines with alerts. Names arrive in capitals and are shown as titles (`format.ts`). The near-me screen asks the browser for the position only when it opens, sends it only in that one search and keeps it nowhere (not in the address, not in storage; the server does not log requests).
 - **Look**: design tokens are CSS variables in `web/src/app.css`, with a second set for the phone's dark theme; components use only the variables. Shared pieces (line badge, departure row, loaders, icons) are in `web/src/lib/components/`.
 - **Installable and offline**: a web manifest and a service worker (`web/src/sw.ts`, built by `vite-plugin-pwa`). The service worker keeps the app's files on the phone and answers every screen with the cached `index.html`, so the app opens without network; it never touches `/api/`. Screens keep their last data in `localStorage` (`lastData.ts`) and show them with a "Sei offline" banner when the server cannot be reached. A new version is downloaded in the background and offered with "Aggiorna" (`update.svelte.ts`). The server sends `sw.js` and the manifest with `no-cache`, like every file outside `assets/`.
 - **Access**: the web app is not behind the token; it holds no data, and its API calls are checked like any other.
@@ -78,6 +83,19 @@ GTT publishes real-time predictions for its urban runs as GTFS Realtime (Protoco
 
 The Rust types for the messages are generated from the official `gtfs-realtime.proto` by `tools/gtfs-rt-codegen` and kept in `src/gtt/proto.rs`, so building the service needs no protobuf compiler.
 
+### GTT alerts
+
+GTT publishes its service alerts (detours, limited lines, suspended stops; about 120 at a time, lasting months) in `alerts.aspx`. `src/gtt/alerts.rs` reads them and links them to stops (Phase 3, decision O):
+
+1. A background task reads the feed at startup and every `GTT_ALERTS_POLL_SECS`, and again at once after new static data. The linked alerts replace the previous ones in memory; when a read fails, the previous ones stay.
+2. An alert names stops by GTT's `stop_id` and lines by `route_id`. When it lists stops, it is linked **by stop**: `gtt_stops` turns `2843` into `gtt:39`, and stops missing there (temporary ones) are only counted. When it lists none, or without static data, it is linked **by line**, to every stop whose lines (from the stop index) it names. A line alert lists nearly all the stops of its line; a stop alert lists one stop and every line serving it, so linking it by line would show it at hundreds of stops.
+3. Line names and modes come from the stop index (`54U` → `gtt:54U` → "54", as in the departures); a line no stop serves keeps its id without the final `U` or `E`.
+4. At each request, only alerts whose period (`communication_period`, or the deprecated `active_period` that GTT uses) includes now are returned; at a stop, two alerts with the same title and text are returned once. The departures of a stop carry its alerts; `/api/alerts` filters by stop and line.
+
+### GTT static data
+
+Only `stops.txt` of GTT's GTFS static archive is used (Phase 3, decision Q): it maps GTT's `stop_id` to its `stop_code`, which is our id (`gtt:<code>`, metro stops included); stations are skipped. `src/gtt/static_data.rs` checks the archive at startup when it was not checked for a day, then every night 10 minutes after `STOPS_SYNC_TIME`, with `If-Modified-Since` set to the `Last-Modified` of the last download: GTT answers `304` without a body when nothing changed, so the 20 MB are downloaded only after GTT rebuilds the archive (about weekly). A download replaces `gtt_stops` in one transaction; an archive without stops is refused. Failures are retried after 5 minutes, 15 minutes, then every hour, like the stop sync.
+
 ### Stop index
 
 - A background task downloads all stops (one query, about 5 MB) on startup when the index is missing or older than 24 hours, then every night at `STOPS_SYNC_TIME`. On failure it retries after 5 minutes, 15 minutes, then every hour.
@@ -102,7 +120,7 @@ Stored in SQLite with a 0-based `position` kept contiguous: inserts go at the en
 
 ### Data
 
-One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in WAL mode). Migrations in `migrations/` are compiled into the binary and applied at startup. Tables: `stops`, `stops_fts`, `sync_state`, `favorites`.
+One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in WAL mode). Migrations in `migrations/` are compiled into the binary and applied at startup. Tables: `stops`, `stops_fts`, `sync_state` (last stop sync and last check of GTT's static data, with its version), `favorites`, `gtt_stops` (GTT's stop ids and ours).
 
 ## Code map
 
@@ -119,6 +137,8 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/gtt/mod.rs` | GTT's real-time client: reading, cache, retry, pause after a failure, health |
 | `src/gtt/trip_updates.rs` | trip updates indexed by run; the prediction for one stop of a run |
 | `src/gtt/comparison.rs` | today's comparison between GTT and OpenTripPlanner |
+| `src/gtt/alerts.rs` | GTT's alerts: reading in the background, linking to stops and lines, active periods |
+| `src/gtt/static_data.rs` | GTT's static data: nightly conditional download, `stops.txt` → `gtt_stops` |
 | `src/gtt/proto.rs` | GTFS Realtime types, generated (do not edit) |
 | `tools/gtfs-rt-codegen/` | the generator of `src/gtt/proto.rs`, a separate Cargo project |
 | `src/stops/mod.rs` | stop index storage, `Feeds`, line sorting |
@@ -129,6 +149,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/api/mod.rs` | router, shared `AppState`, token layer |
 | `src/api/stops.rs` | search, nearby, details and departures handlers |
 | `src/api/favorites.rs` | favorites handlers and input cleaning; favorites with their departures |
+| `src/api/alerts.rs` | `/api/alerts` |
 | `src/api/status.rs`, `health.rs` | `/api/status`, `/health` |
 | `src/api/auth.rs` | `API_TOKEN` middleware |
 | `src/api/error.rs` | error codes and JSON error responses |
@@ -143,6 +164,7 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `web/src/sw.ts`, `web/src/lib/update.svelte.ts` | service worker; new versions and "Aggiorna" |
 | `web/src/lib/lastData.ts` | last favorites and departures, for offline use |
 | `web/public/`, `web/pwa-assets.config.ts` | icon source and generated PNG icons |
+| `web/src/lib/alerts.ts`, `components/AlertsBanner.svelte` | GTT's alerts on the stop screen: banner closed by default, alerts of the lines on screen |
 | `web/src/lib/` | other web app modules: what the info screen says about the status, line types and delays, bottom bar entries |
 | `web/src/lib/components/` | shared components: icons, line badge, departure row, loaders, header, bottom bar |
 | `web/src/screens/` | one component per screen, plus the development-only design page |
@@ -153,11 +175,12 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 ## Known limitations
 
 - **Unofficial upstream**: it can change or disappear. `/api/status` and the logs show failures; a schema change shows up as a GraphQL validation error.
-- **No vehicle positions and no service alerts** in the upstream API. Both come from GTT's open data in Phase 3 ([plan/phase-3.md](plan/phase-3.md)).
+- **No vehicle positions and no service alerts** in the upstream API. Both come from GTT's open data in Phase 3 ([plan/phase-3.md](plan/phase-3.md)); alerts are done (step 2), positions come with trip tracking.
+- **GTT's alerts** name some temporary stops missing from GTT's static data (52 on 2026-11-04): an alert listing only such stops is shown by `/api/alerts` but at no stop. An alert naming neither stops nor lines (1 on 2026-11-04) is shown only by `/api/alerts` without filters. Their periods often last a year, so they do not tell when an alert stops mattering.
 - **GTT's predictions cover urban runs only**, the next few stops of each run, and arrivals only (used as the departure time). Runs not yet started have no prediction. On 2026-11-04 they were mostly earlier than OpenTripPlanner's, by about 3 minutes (median); `/api/status` keeps counting to judge them.
 - **Search**: stops whose name lacks the searched words but whose description has them rank last (e.g. `pza castello` lists towns' "P.ZA CASTELLO" stops before Turin's "CASTELLO").
 - **Stale data** covers only 2 minutes of upstream failure; after that, departures return an error.
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Phase 3 is in progress: GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); GTT's predictions are done (step 1). Then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).
+Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Phase 3 is in progress: GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); GTT's predictions (step 1) and alerts (step 2) are done. Then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).

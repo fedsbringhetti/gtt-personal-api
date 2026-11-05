@@ -8,13 +8,14 @@ use axum::{
 use crate::{
     departures::DeparturesService,
     favorites::FavoriteStore,
-    gtt::GttRealtime,
+    gtt::{GttRealtime, alerts::AlertsService, static_data::GttStatic},
     stops::{Feeds, StopIndex},
     time::Clock,
     upstream::health::UpstreamHealth,
     web::{self, WebAssets},
 };
 
+mod alerts;
 pub mod auth;
 mod error;
 mod favorites;
@@ -31,6 +32,10 @@ pub struct AppState {
     pub upstream_health: Arc<UpstreamHealth>,
     /// GTT's real-time data, for `/api/status`; `None` when disabled.
     pub gtt: Option<Arc<GttRealtime>>,
+    /// GTT's alerts; `None` when GTT's data is disabled.
+    pub alerts: Option<Arc<AlertsService>>,
+    /// GTT's static data, for `/api/status`; `None` when disabled.
+    pub gtt_static: Option<GttStatic>,
     /// When set, every `/api/*` route requires it as a bearer token.
     pub api_token: Option<auth::ApiToken>,
     pub clock: Arc<dyn Clock>,
@@ -41,6 +46,7 @@ pub struct AppState {
 pub fn router(state: AppState) -> Router {
     let mut api = Router::new()
         .route("/api/status", get(status::status))
+        .route("/api/alerts", get(alerts::alerts))
         .route("/api/stops", get(stops::search))
         .route("/api/stops/nearby", get(stops::nearby))
         .route("/api/stops/{stop}", get(stops::details))

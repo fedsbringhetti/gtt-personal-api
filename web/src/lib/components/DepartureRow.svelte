@@ -20,6 +20,8 @@
     canceled?: boolean
     /** One line, smaller minutes: the rows of a favorite on the home screen. */
     compact?: boolean
+    /** The line has GTT alerts at this stop: a small warning after the time. */
+    alert?: boolean
   }
 
   let {
@@ -33,12 +35,19 @@
     stale = false,
     canceled = false,
     compact = false,
+    alert = false,
   }: Props = $props()
 
   let delayInfo = $derived(
     realtime && delay !== null && !canceled ? describeDelay(delay) : null,
   )
 </script>
+
+{#snippet alertMark()}
+  {#if alert}
+    <span class="alert"><Icon name="warning" size={14} stroke={2.2} label="Linea con avvisi" /></span>
+  {/if}
+{/snippet}
 
 <li class="row" class:canceled class:compact>
   <LineBadge name={line} {mode} />
@@ -47,7 +56,7 @@
     {#if compact}
       <!-- Compact rows have no second line. -->
     {:else if canceled}
-      <span class="detail"><s>{time}</s></span>
+      <span class="detail"><s>{time}</s>{@render alertMark()}</span>
     {:else if !stale}
       <span class="detail">
         {#if realtime}
@@ -55,8 +64,10 @@
           {time}
           {#if delayInfo}· <span class="delay {delayInfo.level}">{delayInfo.label}</span>{/if}
         {:else}
-          {time} · orario programmato
+          <!-- The longest second line: with the alert mark it is the part that gives way. -->
+          <span class="clip">{time} · orario programmato</span>
         {/if}
+        {@render alertMark()}
       </span>
     {/if}
   </span>
@@ -115,6 +126,20 @@
 
   .realtime {
     color: var(--accent);
+  }
+
+  .clip {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .alert {
+    display: flex;
+    flex-shrink: 0;
+    margin-left: 4px;
+    color: var(--late);
   }
 
   .delay {

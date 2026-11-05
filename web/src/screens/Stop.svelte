@@ -13,6 +13,8 @@
     type Favorite,
     type StopInfo,
   } from '../lib/api'
+  import { alertsForLines, linesWithAlerts } from '../lib/alerts'
+  import AlertsBanner from '../lib/components/AlertsBanner.svelte'
   import BusLoader from '../lib/components/BusLoader.svelte'
   import DepartureRow from '../lib/components/DepartureRow.svelte'
   import ErrorCard from '../lib/components/ErrorCard.svelte'
@@ -143,6 +145,10 @@
       : [],
   )
 
+  // GTT's alerts follow the line filter, like the departures.
+  let alerts = $derived(alertsForLines(data?.alerts ?? [], lines))
+  let alertLines = $derived(linesWithAlerts(alerts))
+
   // The star: full when a favorite has this stop with exactly the lines on screen.
   let favorites = $state<Favorite[] | null>(null)
   let savingFavorite = $state(false)
@@ -230,6 +236,13 @@
     </div>
   {/if}
 
+  {#if alerts.length > 0}
+    <!-- Keyed by stop: another stop starts with the banner closed. -->
+    {#key stopId}
+      <AlertsBanner {alerts} />
+    {/key}
+  {/if}
+
   {#if staleSince}
     <OfflineBanner since={staleSince} />
   {:else if data?.stale}
@@ -262,6 +275,7 @@
             realtime={departure.realtime}
             canceled={departure.canceled}
             stale={staleSince !== null}
+            alert={alertLines.has(departure.line.toLowerCase())}
           />
         {/each}
       </ol>

@@ -8,6 +8,7 @@
   import {
     describeComparison,
     describeGtt,
+    describeStaticData,
     describeStopIndex,
     describeUpstream,
     type Line,
@@ -37,6 +38,7 @@
   let upstream = $derived(status ? describeUpstream(status) : null)
   let comparison = $derived(status ? describeComparison(status) : null)
   let stopIndex = $derived(status ? describeStopIndex(status) : null)
+  let staticData = $derived(status ? describeStaticData(status) : null)
 </script>
 
 <ScreenHeader title="Info" back />
@@ -73,6 +75,12 @@
       <dt>Elenco fermate</dt>
       <dd>{@render value(stopIndex)}</dd>
     </div>
+    {#if staticData}
+      <div class="row">
+        <dt>Dati statici GTT</dt>
+        <dd>{@render value(staticData)}</dd>
+      </div>
+    {/if}
   </dl>
   {#if status.gtt?.trip_updates.ok === false && status.gtt.trip_updates.last_error}
     <p class="technical">Dettaglio tecnico GTT: {status.gtt.trip_updates.last_error}</p>

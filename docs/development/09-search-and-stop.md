@@ -195,3 +195,4 @@ Build size: JavaScript 67.2 kB (25.8 kB compressed), CSS 10.0 kB (2.8 kB compres
 ## Later changes
 
 - [Chapter 10](10-home-and-favorites.md): the API client sends `POST`, `PATCH` and `DELETE` with JSON bodies; the stop screen has the favorite star; `DepartureRow` has a compact variant.
+- [Chapter 15](15-gtt-alerts.md): the stop screen shows GTT's alerts in a banner; `DepartureRow` marks the departures of lines with alerts.
