@@ -19,7 +19,7 @@ Decisions already made are recorded in these files: follow them, and when a choi
 ## How we work
 
 - Plan first, then build. Do not write code, project skeletons or configuration files for a phase until the user explicitly says to start.
-- Involve the user step by step: before a multi-step process (development step, release, deployment, git or GitHub operations) outline the steps, explain what each one does as it runs, and stop for their OK before changing the repository or anything outside it. They want to understand how things work, not only get them done.
+- Involve the user step by step: before a multi-step process (development step, release, deployment, git or GitHub operations) outline the steps, explain what each one does as it runs, and stop for their OK before changing the repository or anything outside it. They want to understand how things work, not only get them done. Group confirmations to keep turns few (see Token economy).
 - Each phase has a detailed plan in `docs/plan/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
 - Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`. Use the `docs-sync` skill (`.claude/skills/docs-sync/`) for this: a hook blocks commits and PRs whose code changes have no documentation update.
 
@@ -40,7 +40,17 @@ Capable models decide, efficient models build. Size every request first and use 
 
 The session keeps the conversation with the user, decisions, git and GitHub, the full checks under "Commands" and the commit table. A subagent's report is not proof: check its diff before relying on it. If implementation reveals an architectural problem, stop the subagents and revise the plan with the user.
 
-Economy rules: no Opus at high effort for routine work; no delegation of trivial work; no two agents reading the same files for the same purpose; no analysis repeated once done; never trade correctness, security or tests for tokens.
+### Token economy
+
+Use as few tokens as possible: the user asked for it. Every turn re-reads the whole conversation, so a long session is the main cost (step 4 of Phase 3: about 6.8M effective tokens, 61% in the session, mostly re-reading).
+
+- **One session per phase** of a development step, each started fresh from a handoff file in `.claude/handoff/` (not in git): **plan** (Opus) ends with the approved plan, contracts and commit split in `phase-N-step-M.md`; **build** (subagents, checks, review, fixes) appends what changed and what was verified; **ship** (docs, commits, PR) works from both. A new session reads the handoff file and the files it names, not the old conversation.
+- **Model per phase**, suggested at the start of each session (the user switches it): Opus for plan; Sonnet for ship and for routine build sessions.
+- **Fewer turns**: one approval for plan and commit split; parallel subagents are checked together when all have finished; messages to the user only at decisions and at the end of a phase.
+- **Small reads**: only the sections needed (grep, line ranges), never whole long documents to find one fact; a wide exploration goes to a subagent that returns a summary; no reading back a file just edited or verified.
+- **Short briefs**: subagents get the path of the handoff file and their part, not a copy of it; the docs subagent gets the sections to change and the facts already verified.
+- **Commits**: never move or delete files to get past a hook; fix the hook instead.
+- Also: no Opus at high effort for routine work; no delegation of trivial work; no two agents reading the same files for the same purpose; no analysis repeated once done; never trade correctness, security or tests for tokens.
 
 Models and effort: the session's model and effort are the user's choice (model picker in the app, `/model` and `/effort` in the terminal) and are never changed by Claude; planning at high effort needs the session set that way. Subagents get `model` and `effort` on each Agent call, so no `.claude/agents/` files are needed. If a call cannot set them, say so and do not pretend the step ran on that model.
 

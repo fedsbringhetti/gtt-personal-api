@@ -2,3 +2,6 @@
 /data
 .env
 /tools/*/target
+
+# Handoff files between the sessions of a development step (CLAUDE.md, Token economy)
+.claude/handoff/
