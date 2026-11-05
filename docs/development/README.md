@@ -24,7 +24,7 @@ Read the chapters in order the first time: each builds on the previous ones. Cod
 | 14 | [GTT predictions](14-gtt-predictions.md): GTFS Realtime without `protoc`, trip updates, merge rules, `source`, comparison with OpenTripPlanner, GTT rows on the info screen | 3 | [#21](https://github.com/fedsbringhetti/gtt-personal-api/pull/21) |
 | 15 | [GTT alerts](15-gtt-alerts.md): GTT's static data with conditional requests, alerts linked by stop or by line, `/api/alerts`, the alerts banner, the static data row on the info screen | 3 | [#22](https://github.com/fedsbringhetti/gtt-personal-api/pull/22) |
 | 16 | [Rules](16-rules.md): summaries and trackings with typed config, holidays and Easter, occurrences across daylight saving and midnight, CRUD API with pause and resume | 3 | [#23](https://github.com/fedsbringhetti/gtt-personal-api/pull/23) |
-| 17 | [Web Push](17-web-push.md): VAPID keys, encrypted and signed pushes, subscriptions, the `Notifier` interface, the Notifiche screen, the service worker's `push` and `notificationclick` | 3 | — |
+| 17 | [Web Push](17-web-push.md): VAPID keys, encrypted and signed pushes, subscriptions, the `Notifier` interface, the Notifiche screen, the service worker's `push` and `notificationclick` | 3 | [#24](https://github.com/fedsbringhetti/gtt-personal-api/pull/24) |
 
 The planning that came before the code is in [../plan/](../plan/phase-1.md); the overall picture is in [../architecture.md](../architecture.md).
 
