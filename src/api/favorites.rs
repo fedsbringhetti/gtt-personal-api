@@ -285,7 +285,7 @@ fn clean_label(label: Option<String>) -> Result<Option<String>, ApiError> {
 }
 
 /// Trimmed, without empty entries or duplicates, in the given order.
-fn clean_lines(lines: Vec<String>) -> Result<Vec<String>, ApiError> {
+pub(super) fn clean_lines(lines: Vec<String>) -> Result<Vec<String>, ApiError> {
     let mut cleaned: Vec<String> = Vec::new();
     for line in lines {
         let line = line.trim();

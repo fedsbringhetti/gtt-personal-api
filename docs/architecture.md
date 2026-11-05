@@ -10,6 +10,7 @@ A small HTTP service for real-time public transport departures in Turin. It read
 - **departures** with real-time times, delays and line filters, cached so the upstream is called as little as possible;
 - **GTT's own predictions** for urban runs, read from GTT's open data and merged into the departures, and **GTT's service alerts**, linked to the stops they concern (Phase 3);
 - **favorite stops** with labels, line filters and a manual order;
+- **rules** for notifications: a summary of the departures at a fixed time, or the tracking of a run, on chosen days, skipping public holidays (Phase 3; stored and scheduled on a calendar, not sent yet);
 - **resilience**: retries, stale data when the upstream fails, a status endpoint, optional token;
 - **a web app** for the phone, served by the same binary, installable on the phone as "InTime" (Phase 2).
 
@@ -27,6 +28,7 @@ It is a single Rust binary, with the web app embedded in it and an SQLite databa
   │  stops ──────►│ departures ──► cache ──┐   │
   │  stops ──────►│ stop index (SQLite) ◄─┐│   │
   │  favorites ──►│ favorites (SQLite)    ││   │
+  │  rules ──────►│ rules (SQLite)        ││   │
   │  status ─────►│ upstream health ◄─────┼┤   │
   └───────────────┴───────────────────────┼┼───┘
                                           ││
@@ -96,6 +98,17 @@ GTT publishes its service alerts (detours, limited lines, suspended stops; about
 
 Only `stops.txt` of GTT's GTFS static archive is used (Phase 3, decision Q): it maps GTT's `stop_id` to its `stop_code`, which is our id (`gtt:<code>`, metro stops included); stations are skipped. `src/gtt/static_data.rs` checks the archive at startup when it was not checked for a day, then every night 10 minutes after `STOPS_SYNC_TIME`, with `If-Modified-Since` set to the `Last-Modified` of the last download: GTT answers `304` without a body when nothing changed, so the 20 MB are downloaded only after GTT rebuilds the archive (about weekly). A download replaces `gtt_stops` in one transaction; an archive without stops is refused. Failures are retried after 5 minutes, 15 minutes, then every hour, like the stop sync.
 
+### Rules
+
+A rule is a **summary** (at a time, the next departures from a stop) or the **tracking** of a run (line and scheduled time at a stop), on some days of the week (Phase 3, section 5). Step 3 stores them and computes their calendar; the scheduler that acts on it comes with step 5.
+
+- **Storage** (`src/rules/mod.rs`): one row per rule in `rules`. The fields of each kind are a JSON `config`, read into typed structs (`SummaryConfig`, `TrackConfig`) and checked on the way in; the API returns them as `kind` plus `config`, as stored (decision AG). Missing numbers get their defaults when a rule is created, and the defaults are stored.
+- **Checks** (`src/api/rules.rs`): the stop must be in the index and every line must serve it; the stored name of a line is the index's.
+- **Calendar** (`src/rules/schedule.rs`): `Schedule::on(date)` says what a rule does on a day: due at a time, not one of its days, a holiday it skips, paused, disabled. `Schedule::next(now)` is the next occurrence. Days are calendar days in Europe/Rome (decision AI); a local time skipped when daylight saving starts moves to the next valid minute, and one repeated when it ends is the first one.
+- **Holidays** (`src/rules/holidays.rs`): Italian national holidays (fixed dates, Easter and Easter Monday computed, 4 October from 2026) and 24 June, by their Italian names (decision K).
+- **Pause**: `paused_until` is the last day skipped, included; "salta oggi" pauses until today. A pause without a date turns the rule off (decision AH).
+- The API adds `today` and `next` to every rule, computed at each request from the clock (decision AJ).
+
 ### Stop index
 
 - A background task downloads all stops (one query, about 5 MB) on startup when the index is missing or older than 24 hours, then every night at `STOPS_SYNC_TIME`. On failure it retries after 5 minutes, 15 minutes, then every hour.
@@ -120,7 +133,7 @@ Stored in SQLite with a 0-based `position` kept contiguous: inserts go at the en
 
 ### Data
 
-One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in WAL mode). Migrations in `migrations/` are compiled into the binary and applied at startup. Tables: `stops`, `stops_fts`, `sync_state` (last stop sync and last check of GTT's static data, with its version), `favorites`, `gtt_stops` (GTT's stop ids and ours).
+One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in WAL mode). Migrations in `migrations/` are compiled into the binary and applied at startup. Tables: `stops`, `stops_fts`, `sync_state` (last stop sync and last check of GTT's static data, with its version), `favorites`, `gtt_stops` (GTT's stop ids and ours), `rules` (kind-specific fields as JSON in `config`).
 
 ## Code map
 
@@ -146,10 +159,14 @@ One SQLite file in `DATA_DIR` (`gtt.db`, plus `gtt.db-wal` and `gtt.db-shm` in W
 | `src/stops/search.rs` | search ranking and nearby stops |
 | `src/stops/sync.rs` | nightly sync scheduling and retries |
 | `src/favorites.rs` | favorites storage and ordering |
+| `src/rules/mod.rs` | rules: typed config, storage, days and times in JSON |
+| `src/rules/schedule.rs` | a rule's calendar: what it does on a day, its next occurrence, local times across daylight saving |
+| `src/rules/holidays.rs` | Italian public holidays, Easter |
 | `src/api/mod.rs` | router, shared `AppState`, token layer |
 | `src/api/stops.rs` | search, nearby, details and departures handlers |
 | `src/api/favorites.rs` | favorites handlers and input cleaning; favorites with their departures |
 | `src/api/alerts.rs` | `/api/alerts` |
+| `src/api/rules.rs` | rules handlers: checks, defaults, pause and resume, today and next |
 | `src/api/status.rs`, `health.rs` | `/api/status`, `/health` |
 | `src/api/auth.rs` | `API_TOKEN` middleware |
 | `src/api/error.rs` | error codes and JSON error responses |
@@ -183,4 +200,4 @@ Reading order for a first look: `main.rs` → `api/mod.rs` → `api/stops.rs` �
 - **Release builds on the Mac** fail (the linker produces a malformed `sqlx-macros` library); debug builds and Docker builds work.
 - **Single user**: no accounts; favorites are shared by whoever has the token.
 
-Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Phase 3 is in progress: GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); GTT's predictions (step 1) and alerts (step 2) are done. Then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).
+Phase 2, the web app, is done (`v0.2.0`, [plan/phase-2.md](plan/phase-2.md)). Phase 3 is in progress: GTT open data, rules, trip tracking and Web Push notifications ([plan/phase-3.md](plan/phase-3.md)); GTT's predictions (step 1), alerts (step 2) and rules without sending (step 3) are done. Then Phase 4, Cloudflare Access and the first deployment ([plan/phase-4.md](plan/phase-4.md)).

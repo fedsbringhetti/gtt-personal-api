@@ -16,6 +16,7 @@ use gtt_personal_api::{
         alerts::{self, AlertsService},
         static_data::{self, GttStatic},
     },
+    rules::RuleStore,
     stops::{StopIndex, sync},
     time::{Clock, SystemClock},
     upstream::UpstreamClient,
@@ -89,6 +90,7 @@ async fn serve(config: Config) -> ExitCode {
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
     let stops = StopIndex::new(pool.clone());
     let favorites = FavoriteStore::new(pool.clone());
+    let rules = RuleStore::new(pool.clone());
     sync::spawn(
         stops.clone(),
         upstream.clone(),
@@ -146,6 +148,7 @@ async fn serve(config: Config) -> ExitCode {
         )),
         stops,
         favorites,
+        rules,
         default_feeds: config.default_feeds.clone(),
         upstream_health,
         gtt,

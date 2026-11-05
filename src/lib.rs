@@ -4,6 +4,7 @@ pub mod db;
 pub mod departures;
 pub mod favorites;
 pub mod gtt;
+pub mod rules;
 pub mod stops;
 pub mod time;
 pub mod upstream;

@@ -200,6 +200,100 @@ Every favorite, in order, with its next departures: what the web app's home scre
 - When one stop fails, that favorite has `departures: []` and `error: {"code", "message"}` (codes as in [Errors](#errors)); the others are unaffected and the response is still 200.
 - Stops are read in parallel and through the same cache as `/api/stops/{stop}/departures`.
 
+## Rules
+
+Rules send notifications on their own: a **summary** of the next departures at a fixed time, or the tracking of one **run** every matching day ([plan](../plan/phase-3.md#5-rule-model)). They are stored and their calendar is computed from Phase 3, step 3; sending them comes with the scheduler (step 5) and tracking (step 6).
+
+```bash
+curl -s -H "$AUTH" -H "Content-Type: application/json" -X POST "$BASE/api/rules" -d '{"name": "Casa → lavoro", "kind": "summary", "stop": "39", "days": ["mon", "tue", "wed", "thu", "fri"], "config": {"time": "07:40", "lines": ["9B", "67"]}}'
+```
+
+Creates a rule (201). The stop must exist, and every line must serve it (case does not matter: `9b` is stored as `9B`, as the stop index spells it).
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `name` | | 1–100 characters |
+| `kind` | | `summary` or `track`; cannot change later |
+| `stop` | | code (`39`) or id (`gtt:39`) |
+| `days` | | `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`; at least one, stored Monday first |
+| `skip_holidays` | `true` | skip Italian national holidays (with Easter Monday and, from 2026, 4 October) and 24 June, San Giovanni |
+| `enabled` | `true` | |
+| `config` | | the fields of `kind`, below; unknown fields are refused |
+
+`config` of a `summary`:
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `time` | | `HH:MM`, Europe/Rome |
+| `lines` | `[]` | at most 20; empty means all lines |
+| `window_minutes` | 30 | departures in the next N minutes, 5–120 |
+| `max_departures` | 6 | 1–20 |
+
+`config` of a `track`:
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `line` | | one line serving the stop |
+| `scheduled_time` | | `HH:MM`: the run's scheduled departure at the stop |
+| `tolerance_minutes` | 2 | how far the run may be from `scheduled_time` in the timetable, 0–10 |
+| `watch_from_minutes` | 30 | tracking starts N minutes before, 10–120, at least the longest reminder |
+| `alert_before_minutes` | `[10, 5]` | reminders before the expected departure, 1–60 each, at most 4, stored longest first; `[]` for none |
+| `delay_alert_minutes` | 3 | alert when the delay reaches N minutes, 1–30 |
+
+Missing numbers get their defaults, which are stored in the rule: a later change of a default does not change existing rules.
+
+```json
+{
+  "id": 1, "name": "Casa → lavoro", "enabled": true, "stop_id": "gtt:39",
+  "days": ["mon", "tue", "wed", "thu", "fri"], "date": null, "skip_holidays": true, "paused_until": null,
+  "kind": "summary",
+  "config": {"time": "07:40", "lines": ["9B", "67"], "window_minutes": 30, "max_departures": 6},
+  "created_at": "2026-11-05T06:00:00Z", "updated_at": "2026-11-05T06:00:00Z",
+  "stop": {"id": "gtt:39", "code": "39", "name": "PORTA NUOVA"}, "missing": false,
+  "today": {"status": "due", "at": "2026-11-05T07:40:00+01:00"},
+  "next": "2026-11-05T07:40:00+01:00"
+}
+```
+
+- `stop` is abridged here; `missing` is true when a sync removed the stop, as for favorites. `date` is set only for a run tracked on the fly (step 6), which this endpoint does not create.
+- `today` says what the rule does today in Europe/Rome, by `status`: `due` (at `at`, even when that time has passed), `not_scheduled` (not one of its days), `holiday` (with the `holiday` name in Italian), `paused` (with `until`), `disabled`.
+- `next` is the next occurrence from now, `null` when the rule is off. Times that do not exist when daylight saving starts move to the next valid minute (02:30 → 03:00); times that happen twice when it ends are the first one.
+- The days are calendar days in Rome: a rule on `sat` at `00:30` runs in the night between Friday and Saturday.
+
+```bash
+curl -s -H "$AUTH" "$BASE/api/rules"
+```
+
+```bash
+curl -s -H "$AUTH" "$BASE/api/rules/1"
+```
+
+All rules, oldest first (`{"rules": [...]}`), or one rule, each as above.
+
+```bash
+curl -s -H "$AUTH" -H "Content-Type: application/json" -X PATCH "$BASE/api/rules/1" -d '{"days": ["mon", "wed"], "config": {"time": "07:50"}}'
+```
+
+Changes only the fields given: `name`, `stop`, `days`, `skip_holidays`, `enabled`, and `config`, which is **replaced whole** (missing numbers take their defaults again). `kind` is accepted only when unchanged. When `stop` or `config` changes, the lines are checked against the stop again.
+
+```bash
+curl -s -H "$AUTH" -H "Content-Type: application/json" -X POST "$BASE/api/rules/1/pause" -d '{"until": "2026-11-16"}'
+```
+
+Pauses the rule until a date, **that day included** ("in pausa fino al 16 novembre"); "salta oggi" is `until` today. `until` goes from today to one year ahead; the rule is also turned on. Without a body (or without `until`) the rule is turned off (`enabled: false`).
+
+```bash
+curl -s -H "$AUTH" -X POST "$BASE/api/rules/1/resume"
+```
+
+Turns the rule on and ends its pause.
+
+```bash
+curl -s -H "$AUTH" -X DELETE "$BASE/api/rules/1"
+```
+
+Deletes it (204).
+
 ## Status and health
 
 ```bash
@@ -246,7 +340,7 @@ Always `{"error": {"code": "...", "message": "..."}}`:
 |------|--------|------|
 | 400 | `invalid_request` | bad parameter or body (the message says which) |
 | 401 | `unauthorized` | token missing or wrong |
-| 404 | `stop_not_found`, `favorite_not_found` | unknown stop or favorite |
+| 404 | `stop_not_found`, `favorite_not_found`, `rule_not_found` | unknown stop, favorite or rule |
 | 500 | `internal_error` | database problem (details in the logs) |
 | 502 | `upstream_error` | upstream error and no recent data to fall back on |
 | 503 | `index_not_ready` | stop index not downloaded yet |
