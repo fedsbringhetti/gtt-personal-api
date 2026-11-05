@@ -23,6 +23,27 @@ Decisions already made are recorded in these files: follow them, and when a choi
 - Each phase has a detailed plan in `docs/plan/phase-N.md`, written and approved before the phase starts. If the plan changes during development, update the file.
 - Every development step adds a chapter in `docs/development/` (`NN-short-name.md`, template in its README) in the same PR as the code: goal, decisions, files, how the code works with short excerpts, tests, how to check it, pitfalls. Changes visible to users also update `docs/user/`; design changes update `docs/architecture.md`. Use the `docs-sync` skill (`.claude/skills/docs-sync/`) for this: a hook blocks commits and PRs whose code changes have no documentation update.
 
+## Multi-agent workflow
+
+Capable models decide, efficient models build. Size every request first and use the lightest workflow that fits:
+
+| Request | Workflow |
+|---------|----------|
+| Simple (small fix, one edit, docs) | done directly by the session, no planning phase, no subagents |
+| Medium (one bounded change) | analyzed and done by the session, or by one Sonnet subagent for a well-bounded part |
+| Complex (a development step) | plan (Opus, high) → Sonnet implements and tests → Opus reviews |
+| Architectural or high risk | deeper plan (Opus, high) → delegated implementation → independent Opus review |
+
+1. **Plan** (the session, Opus at high effort). Read the plan of the phase, the docs and the code involved; then write the plan the user approves under "How we work": goals and requirements, files to change and create, contracts and interfaces between parts, dependencies between tasks, acceptance criteria, tests, constraints, risks. Split it into tasks that can run independently. Nothing is delegated before the plan is approved.
+2. **Implement and test** (Agent tool, `model: "sonnet"`, `effort: "medium"`). One subagent per task, with a short but complete brief: its part of the plan, the files it owns, the contracts it must respect, the tests to write and the checks to run. Subagents explore only what their task needs, follow the existing conventions, write or update tests, change nothing outside their task, never commit, push or touch git, and report any gap or contradiction in the plan instead of working around it. Run subagents in parallel only on independent tasks with no file in common; otherwise one after the other.
+3. **Review** (Agent tool, `model: "opus"`, `effort: "medium"`, a fresh agent, not a fork). For development steps, architectural changes and complex features, never after small edits. It receives the approved plan and the diff, not the session's conclusions, and checks requirements, consistency with the architecture, correctness, errors and edge cases, security, tests and regressions. Its report ranks problems by severity with suggested fixes; the session (or a Sonnet subagent) fixes them before the commit table.
+
+The session keeps the conversation with the user, decisions, git and GitHub, the full checks under "Commands" and the commit table. A subagent's report is not proof: check its diff before relying on it. If implementation reveals an architectural problem, stop the subagents and revise the plan with the user.
+
+Economy rules: no Opus at high effort for routine work; no delegation of trivial work; no two agents reading the same files for the same purpose; no analysis repeated once done; never trade correctness, security or tests for tokens.
+
+Models and effort: the session's model and effort are the user's choice (model picker in the app, `/model` and `/effort` in the terminal) and are never changed by Claude; planning at high effort needs the session set that way. Subagents get `model` and `effort` on each Agent call, so no `.claude/agents/` files are needed. If a call cannot set them, say so and do not pretend the step ran on that model.
+
 ## Git
 
 - `main` always works. No `dev` branch.
